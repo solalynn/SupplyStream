@@ -8,58 +8,69 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--border:#30363d;--border2:#21262d;
-  --text:#e6edf3;--text2:#8b949e;--text3:#656d76;
-  --blue:#58a6ff;--blue-d:#1f6feb;--blue-bg:rgba(31,111,235,.15);
-  --green:#3fb950;--green-d:#238636;--green-bg:rgba(63,185,80,.15);
-  --red:#f85149;--red-d:#da3633;--red-bg:rgba(248,81,73,.15);
-  --amber:#d29922;--amber-bg:rgba(210,153,34,.15);
-  --purple:#bc8cff;--purple-bg:rgba(188,140,255,.15);
-  --teal:#39d353;
-  --up:#26a69a;--down:#ef5350;
+  /* ── Suntory PepsiCo Pastel Palette ───────────────────── */
+  /* Backgrounds — light wash of Pepsi blue */
+  --bg:#F2F6FF;--bg2:#FFFFFF;--bg3:#EAF1FF;--border:#C4D7F8;--border2:#DCE9FD;
+  /* Text — Pepsi navy scale */
+  --text:#0B1F5C;--text2:#3461A8;--text3:#7B96C4;
+  /* Pepsi Blue (primary accent) */
+  --blue:#0049AC;--blue-d:#003285;--blue-bg:#E8F2FF;
+  /* Positive / Surplus */
+  --green:#16784A;--green-d:#115F3A;--green-bg:#EAF7F1;
+  /* Negative / Shortage — Pepsi Red */
+  --red:#C4141E;--red-d:#9D1018;--red-bg:#FEF0F1;
+  /* Warning — Suntory whisky gold */
+  --amber:#A86810;--amber-bg:#FEF5E7;
+  /* Pre-Fcst purple */
+  --purple:#6E45B8;--purple-bg:#F3EEFF;
+  --teal:#1888A0;
+  /* Candlestick */
+  --up:#16784A;--down:#C4141E;
   --font-mono:'DM Mono',monospace;--font-sans:'Plus Jakarta Sans',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:12px;overflow-x:hidden}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:12px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:var(--blue);text-decoration:none}
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .app{display:flex;flex-direction:column;height:100vh;max-height:100vh}
-.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px 18px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;position:relative;box-shadow:0 1px 6px rgba(0,73,172,.07)}
+.topbar::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#E30613 0%,#0049AC 55%,#003285 100%)}
 .logo{font-family:var(--font-sans);font-weight:800;font-size:15px;letter-spacing:-.3px;white-space:nowrap}
 .logo span{color:var(--blue)}
 .logo sub{font-size:9px;color:var(--text2);font-weight:400;display:block;margin-top:-2px;letter-spacing:.05em}
 .divider{width:1px;height:24px;background:var(--border);flex-shrink:0}
 .ctrl-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .ctrl-label{font-size:9px;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
-select,input[type=text]{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-family:var(--font-mono);font-size:11px;outline:none;cursor:pointer}
-select:hover,select:focus,input:focus{border-color:var(--blue-d)}
+select,input[type=text]{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-family:var(--font-mono);font-size:11px;outline:none;cursor:pointer;box-shadow:0 1px 2px rgba(0,73,172,.04)}
+select:hover,select:focus,input:focus{border-color:var(--blue-d);box-shadow:0 0 0 2px rgba(0,73,172,.12)}
 .btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:10px;font-family:var(--font-mono);cursor:pointer;transition:.15s;white-space:nowrap}
 .btn:hover{border-color:var(--blue-d);color:var(--text);background:var(--bg2)}
-.btn.active{background:var(--blue-bg);border-color:var(--blue-d);color:var(--blue)}
+.btn.active{background:var(--blue-bg);border-color:var(--blue-d);color:var(--blue);font-weight:600}
 .tag{font-size:9px;padding:2px 7px;border-radius:20px;font-family:var(--font-sans);font-weight:600;white-space:nowrap}
-.tag-live{background:var(--green-bg);color:var(--green);border:1px solid var(--green-d)}
-.tag-demo{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(210,153,34,.4)}
+.tag-live{background:var(--green-bg);color:var(--green);border:1px solid rgba(22,120,74,.35)}
+.tag-demo{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(168,104,16,.35)}
 .spacer{flex:1}
 #data-source-tag{cursor:pointer}
 
 /* ── KPI Bar ─────────────────────────────────────────────────────────────── */
-.kpi-bar{display:flex;gap:0;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
-.kpi{padding:8px 16px;border-right:1px solid var(--border);min-width:120px}
+.kpi-bar{display:flex;gap:0;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.kpi{padding:8px 16px;border-right:1px solid var(--border);min-width:120px;background:var(--bg2);border-top:2px solid transparent;transition:border-color .2s}
 .kpi:last-child{border-right:none}
-.kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
-.kpi-val{font-size:16px;font-weight:500;margin-top:2px;font-family:var(--font-sans)}
-.kpi-sub{font-size:9px;color:var(--text2);margin-top:1px}
+.kpi:hover{border-top-color:var(--blue)}
+.kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--font-sans);font-weight:600}
+.kpi-val{font-size:16px;font-weight:700;margin-top:2px;font-family:var(--font-sans)}
+.kpi-sub{font-size:9px;color:var(--text3);margin-top:1px}
 .kpi-val.up{color:var(--green)}.kpi-val.down{color:var(--red)}.kpi-val.warn{color:var(--amber)}
 
 /* ── Main Content ────────────────────────────────────────────────────────── */
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:220px;min-width:180px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar{width:220px;min-width:180px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;box-shadow:2px 0 8px rgba(0,73,172,.04)}
 .sb-section{padding:10px 12px;border-bottom:1px solid var(--border2)}
 .sb-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--font-sans);font-weight:700}
 .sku-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:.1s;border:1px solid transparent}
 .sku-item:hover{background:var(--bg3);border-color:var(--border)}
-.sku-item.active{background:var(--blue-bg);border-color:var(--blue-d)}
+.sku-item.active{background:var(--blue-bg);border-color:var(--blue);box-shadow:0 0 0 1px rgba(0,73,172,.15)}
 .sku-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .sku-info{flex:1;min-width:0}
 .sku-name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -74,34 +85,34 @@ select:hover,select:focus,input:focus{border-color:var(--blue-d)}
 .leg-toggle.off{opacity:.3}
 
 /* Alert list */
-.alert-item{padding:5px 6px;border-radius:6px;margin-bottom:4px;border-left:2px solid;font-size:9.5px}
-.alert-crit{background:rgba(248,81,73,.08);border-color:var(--red)}
-.alert-high{background:rgba(210,153,34,.08);border-color:var(--amber)}
-.alert-med {background:rgba(88,166,255,.08);border-color:var(--blue)}
+.alert-item{padding:5px 6px;border-radius:6px;margin-bottom:4px;border-left:3px solid;font-size:9.5px}
+.alert-crit{background:#FEF0F1;border-color:var(--red)}
+.alert-high{background:#FEF5E7;border-color:var(--amber)}
+.alert-med {background:#E8F2FF;border-color:var(--blue)}
 .alert-mat{font-weight:500;color:var(--text)}
 .alert-msg{color:var(--text2);margin-top:1px}
 
 /* ── Charts Column ───────────────────────────────────────────────────────── */
 .charts-col{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.chart-container{position:relative;background:var(--bg)}
+.chart-container{position:relative;background:#FFFFFF}
 .chart-title{position:absolute;top:8px;left:12px;z-index:10;pointer-events:none}
 .ct-main{font-size:10px;font-family:var(--font-sans);font-weight:700;color:var(--text);letter-spacing:.05em}
 .ct-sub{font-size:9px;color:var(--text2);margin-top:1px}
-.chart-resizer{height:4px;background:var(--border2);cursor:ns-resize;flex-shrink:0;transition:.15s}
-.chart-resizer:hover{background:var(--blue-d)}
+.chart-resizer{height:3px;background:var(--border2);cursor:ns-resize;flex-shrink:0;transition:.15s}
+.chart-resizer:hover{background:var(--blue)}
 
 #chart-main{flex:1;min-height:160px}
 #chart-prod{height:100px;flex-shrink:0}
 #chart-gap {height:90px;flex-shrink:0}
 
-.crosshair-info{position:absolute;top:8px;right:12px;z-index:10;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;pointer-events:none;display:none}
+.crosshair-info{position:absolute;top:8px;right:12px;z-index:10;background:rgba(255,255,255,.94);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;pointer-events:none;display:none;backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(0,73,172,.1)}
 .ci-row{display:flex;gap:8px;align-items:center}
-.ci-label{color:var(--text2)}
-.ci-val{font-weight:500}
+.ci-label{color:var(--text3)}
+.ci-val{font-weight:600}
 .ci-o{color:var(--blue)}.ci-h{color:var(--green)}.ci-l{color:var(--red)}.ci-c{color:var(--amber)}
 
 /* ── Bottom Panel ────────────────────────────────────────────────────────── */
-.bottom-panel{display:flex;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);height:180px;overflow:hidden}
+.bottom-panel{display:flex;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);height:180px;overflow:hidden;box-shadow:0 -1px 6px rgba(0,73,172,.04)}
 .bp-section{flex:1;border-right:1px solid var(--border);padding:10px 12px;overflow-y:auto;min-width:0}
 .bp-section:last-child{border-right:none}
 .bp-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--font-sans);font-weight:700;display:flex;align-items:center;justify-content:space-between}
@@ -127,12 +138,12 @@ select:hover,select:focus,input:focus{border-color:var(--blue-d)}
 .sk-table tr:last-child td{border-bottom:none}
 .sk-table tr:hover td{background:var(--bg3)}
 .dos-chip{font-size:8px;padding:1px 5px;border-radius:20px;font-family:var(--font-sans);font-weight:600}
-.dos-ok{background:var(--green-bg);color:var(--green)}
-.dos-warn{background:var(--amber-bg);color:var(--amber)}
-.dos-crit{background:var(--red-bg);color:var(--red)}
+.dos-ok{background:#EAF7F1;color:#16784A;border:1px solid rgba(22,120,74,.25)}
+.dos-warn{background:#FEF5E7;color:#A86810;border:1px solid rgba(168,104,16,.25)}
+.dos-crit{background:#FEF0F1;color:#C4141E;border:1px solid rgba(196,20,30,.25)}
 
 /* Tooltip */
-#tooltip{position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:10px;pointer-events:none;display:none;z-index:1000;max-width:200px}
+#tooltip{position:fixed;background:rgba(255,255,255,.96);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:10px;pointer-events:none;display:none;z-index:1000;max-width:200px;box-shadow:0 4px 14px rgba(0,73,172,.12);backdrop-filter:blur(4px)}
 </style>
 </head>
 <body>
@@ -234,23 +245,23 @@ select:hover,select:focus,input:focus{border-color:var(--blue-d)}
       <div class="sb-title">Demand Signals</div>
       <div id="demand-legend">
         <div class="legend-row leg-toggle" data-series="ibp">
-          <div class="legend-dot" style="background:#58a6ff;height:2px"></div>
+          <div class="legend-dot" style="background:#0049AC;height:2px"></div>
           <span>IBP Forecast</span>
         </div>
         <div class="legend-row leg-toggle" data-series="pre">
-          <div class="legend-dot" style="background:#bc8cff;height:2px"></div>
+          <div class="legend-dot" style="background:#6E45B8;height:2px;border-style:dashed"></div>
           <span>Pre-Forecast</span>
         </div>
         <div class="legend-row leg-toggle" data-series="post">
-          <div class="legend-dot" style="background:#d29922;height:2px;width:12px"></div>
+          <div class="legend-dot" style="background:#A86810;height:2px;width:12px"></div>
           <span>Post-Forecast</span>
         </div>
         <div class="legend-row leg-toggle" data-series="actual">
-          <div class="legend-dot" style="background:#3fb950;height:2px"></div>
+          <div class="legend-dot" style="background:#16784A;height:2px"></div>
           <span>Actual Sales</span>
         </div>
         <div class="legend-row">
-          <div class="legend-sq" style="background:rgba(38,166,154,.25);border:1px solid #26a69a"></div>
+          <div class="legend-sq" style="background:rgba(0,73,172,.15);border:1px solid #0049AC"></div>
           <span>Production Order ▲</span>
         </div>
       </div>
@@ -347,18 +358,19 @@ const SNAPSHOT_WEEK = 9;            // W09 = Feb 23 (inventory snapshot week)
 const NUM_WEEKS = 52;
 
 const COLORS = {
-  ibp:    '#58a6ff',
-  pre:    '#bc8cff',
-  post:   '#d29922',
-  actual: '#3fb950',
-  up:     '#26a69a',
-  down:   '#ef5350',
-  prod:   'rgba(38,166,154,0.7)',
-  gap_up: '#3fb950',
-  gap_dn: '#f85149',
+  ibp:    '#0049AC',  // Pepsi blue
+  pre:    '#6E45B8',  // soft purple
+  post:   '#A86810',  // Suntory gold
+  actual: '#16784A',  // positive green
+  up:     '#16784A',  // candle bull
+  down:   '#C4141E',  // candle bear / Pepsi red
+  prod:   'rgba(0,73,172,0.45)',  // production bar — Pepsi blue translucent
+  gap_up: '#16784A',
+  gap_dn: '#C4141E',
 };
 
-const BRAND_COLORS = ['#58a6ff','#3fb950','#d29922','#bc8cff','#39d353','#e3b341'];
+// Pastel brand palette — each SKU dot gets a distinct brand-family colour
+const BRAND_COLORS = ['#0049AC','#16784A','#A86810','#6E45B8','#C4141E','#1888A0'];
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let state = {
@@ -658,21 +670,25 @@ function chartOptions(height) {
   return {
     height,
     layout: {
-      background: {color: '#0d1117'},
-      textColor: '#8b949e',
+      background: {color: '#FFFFFF'},
+      textColor: '#3461A8',
       fontFamily: "'DM Mono', monospace",
     },
     grid: {
-      vertLines: {color: '#21262d'},
-      horzLines: {color: '#21262d'},
+      vertLines: {color: '#E8EFFE'},
+      horzLines: {color: '#E8EFFE'},
     },
-    crosshair: {mode: LightweightCharts.CrosshairMode.Normal},
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+      vertLine: {color: '#0049AC', labelBackgroundColor: '#0049AC'},
+      horzLine: {color: '#0049AC', labelBackgroundColor: '#0049AC'},
+    },
     rightPriceScale: {
-      borderColor: '#30363d',
+      borderColor: '#C4D7F8',
       scaleMargins: {top: 0.08, bottom: 0.08},
     },
     timeScale: {
-      borderColor: '#30363d',
+      borderColor: '#C4D7F8',
       timeVisible: true,
       secondsVisible: false,
     },
@@ -693,12 +709,12 @@ function initCharts() {
   });
 
   candleSeries = mainChart.addCandlestickSeries({
-    upColor:        '#26a69a',
-    downColor:      '#ef5350',
-    borderUpColor:  '#26a69a',
-    borderDownColor:'#ef5350',
-    wickUpColor:    '#26a69a',
-    wickDownColor:  '#ef5350',
+    upColor:        '#16784A',   // surplus green
+    downColor:      '#C4141E',   // Pepsi red
+    borderUpColor:  '#16784A',
+    borderDownColor:'#C4141E',
+    wickUpColor:    '#16784A',
+    wickDownColor:  '#C4141E',
   });
 
   demSeries.ibp    = mainChart.addLineSeries({color: COLORS.ibp,    lineWidth: 1.5, lineStyle: 0, priceLineVisible: false, lastValueVisible: false});
@@ -711,13 +727,13 @@ function initCharts() {
     ...chartOptions(prodEl.clientHeight),
     width: prodEl.clientWidth,
     rightPriceScale: {
-      borderColor: '#30363d',
+      borderColor: '#C4D7F8',
       scaleMargins: {top: 0.1, bottom: 0.05},
     },
-    timeScale: {borderColor: '#30363d', visible: false},
+    timeScale: {borderColor: '#C4D7F8', visible: false},
   });
   prodSeries = prodChart.addHistogramSeries({
-    color: 'rgba(38,166,154,0.6)',
+    color: 'rgba(0,73,172,0.45)',   // Pepsi blue translucent
     priceLineVisible: false,
     lastValueVisible: false,
   });
@@ -727,10 +743,10 @@ function initCharts() {
     ...chartOptions(gapEl.clientHeight),
     width: gapEl.clientWidth,
     rightPriceScale: {
-      borderColor: '#30363d',
+      borderColor: '#C4D7F8',
       scaleMargins: {top: 0.1, bottom: 0.1},
     },
-    timeScale: {borderColor: '#30363d', visible: true, timeVisible: true},
+    timeScale: {borderColor: '#C4D7F8', visible: true, timeVisible: true},
   });
   gapSeries = gapChart.addHistogramSeries({
     priceLineVisible: false,
@@ -874,7 +890,7 @@ function updateCharts(skuId) {
   const markers = sort(prod).map(p => ({
     time: p.time,
     position: 'belowBar',
-    color: '#26a69a',
+    color: '#0049AC',   // Pepsi blue production markers
     shape: 'arrowUp',
     text: `+${fmtN(p.value)}`,
   }));
