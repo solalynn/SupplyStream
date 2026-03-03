@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Stream — Trading Chart Dashboard · Suntory PepsiCo Thailand</title>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--border:#30363d;--border2:#21262d;
+  --text:#e6edf3;--text2:#8b949e;--text3:#656d76;
+  --blue:#58a6ff;--blue-d:#1f6feb;--blue-bg:rgba(31,111,235,.15);
+  --green:#3fb950;--green-d:#238636;--green-bg:rgba(63,185,80,.15);
+  --red:#f85149;--red-d:#da3633;--red-bg:rgba(248,81,73,.15);
+  --amber:#d29922;--amber-bg:rgba(210,153,34,.15);
+  --purple:#bc8cff;--purple-bg:rgba(188,140,255,.15);
+  --teal:#39d353;
+  --up:#26a69a;--down:#ef5350;
+  --font-mono:'DM Mono',monospace;--font-sans:'Plus Jakarta Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:12px;overflow-x:hidden}
+a{color:var(--blue);text-decoration:none}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;height:100vh;max-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.logo{font-family:var(--font-sans);font-weight:800;font-size:15px;letter-spacing:-.3px;white-space:nowrap}
+.logo span{color:var(--blue)}
+.logo sub{font-size:9px;color:var(--text2);font-weight:400;display:block;margin-top:-2px;letter-spacing:.05em}
+.divider{width:1px;height:24px;background:var(--border);flex-shrink:0}
+.ctrl-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ctrl-label{font-size:9px;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+select,input[type=text]{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-family:var(--font-mono);font-size:11px;outline:none;cursor:pointer}
+select:hover,select:focus,input:focus{border-color:var(--blue-d)}
+.btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:10px;font-family:var(--font-mono);cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--blue-d);color:var(--text);background:var(--bg2)}
+.btn.active{background:var(--blue-bg);border-color:var(--blue-d);color:var(--blue)}
+.tag{font-size:9px;padding:2px 7px;border-radius:20px;font-family:var(--font-sans);font-weight:600;white-space:nowrap}
+.tag-live{background:var(--green-bg);color:var(--green);border:1px solid var(--green-d)}
+.tag-demo{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(210,153,34,.4)}
+.spacer{flex:1}
+#data-source-tag{cursor:pointer}
+
+/* ── KPI Bar ─────────────────────────────────────────────────────────────── */
+.kpi-bar{display:flex;gap:0;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.kpi{padding:8px 16px;border-right:1px solid var(--border);min-width:120px}
+.kpi:last-child{border-right:none}
+.kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+.kpi-val{font-size:16px;font-weight:500;margin-top:2px;font-family:var(--font-sans)}
+.kpi-sub{font-size:9px;color:var(--text2);margin-top:1px}
+.kpi-val.up{color:var(--green)}.kpi-val.down{color:var(--red)}.kpi-val.warn{color:var(--amber)}
+
+/* ── Main Content ────────────────────────────────────────────────────────── */
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;min-width:180px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sb-section{padding:10px 12px;border-bottom:1px solid var(--border2)}
+.sb-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--font-sans);font-weight:700}
+.sku-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:.1s;border:1px solid transparent}
+.sku-item:hover{background:var(--bg3);border-color:var(--border)}
+.sku-item.active{background:var(--blue-bg);border-color:var(--blue-d)}
+.sku-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sku-info{flex:1;min-width:0}
+.sku-name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sku-sub{font-size:9px;color:var(--text2)}
+.sku-stock{font-size:10px;font-weight:500;white-space:nowrap}
+
+/* Legend */
+.legend-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:10px;color:var(--text2)}
+.legend-dot{width:10px;height:2px;border-radius:2px;flex-shrink:0}
+.legend-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.leg-toggle{cursor:pointer;transition:.1s}
+.leg-toggle.off{opacity:.3}
+
+/* Alert list */
+.alert-item{padding:5px 6px;border-radius:6px;margin-bottom:4px;border-left:2px solid;font-size:9.5px}
+.alert-crit{background:rgba(248,81,73,.08);border-color:var(--red)}
+.alert-high{background:rgba(210,153,34,.08);border-color:var(--amber)}
+.alert-med {background:rgba(88,166,255,.08);border-color:var(--blue)}
+.alert-mat{font-weight:500;color:var(--text)}
+.alert-msg{color:var(--text2);margin-top:1px}
+
+/* ── Charts Column ───────────────────────────────────────────────────────── */
+.charts-col{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.chart-container{position:relative;background:var(--bg)}
+.chart-title{position:absolute;top:8px;left:12px;z-index:10;pointer-events:none}
+.ct-main{font-size:10px;font-family:var(--font-sans);font-weight:700;color:var(--text);letter-spacing:.05em}
+.ct-sub{font-size:9px;color:var(--text2);margin-top:1px}
+.chart-resizer{height:4px;background:var(--border2);cursor:ns-resize;flex-shrink:0;transition:.15s}
+.chart-resizer:hover{background:var(--blue-d)}
+
+#chart-main{flex:1;min-height:160px}
+#chart-prod{height:100px;flex-shrink:0}
+#chart-gap {height:90px;flex-shrink:0}
+
+.crosshair-info{position:absolute;top:8px;right:12px;z-index:10;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;pointer-events:none;display:none}
+.ci-row{display:flex;gap:8px;align-items:center}
+.ci-label{color:var(--text2)}
+.ci-val{font-weight:500}
+.ci-o{color:var(--blue)}.ci-h{color:var(--green)}.ci-l{color:var(--red)}.ci-c{color:var(--amber)}
+
+/* ── Bottom Panel ────────────────────────────────────────────────────────── */
+.bottom-panel{display:flex;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);height:180px;overflow:hidden}
+.bp-section{flex:1;border-right:1px solid var(--border);padding:10px 12px;overflow-y:auto;min-width:0}
+.bp-section:last-child{border-right:none}
+.bp-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:var(--font-sans);font-weight:700;display:flex;align-items:center;justify-content:space-between}
+
+/* WH utilization bars */
+.wh-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.wh-label{font-size:9px;color:var(--text2);width:40px;flex-shrink:0}
+.wh-bar-track{flex:1;height:10px;background:var(--bg3);border-radius:3px;overflow:hidden;position:relative}
+.wh-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.wh-pct{font-size:9px;width:36px;text-align:right;flex-shrink:0}
+
+/* Line load table */
+.ll-table{width:100%;border-collapse:collapse;font-size:9.5px}
+.ll-table th{color:var(--text3);text-transform:uppercase;font-size:8px;letter-spacing:.07em;padding:2px 4px;text-align:left;font-weight:600;border-bottom:1px solid var(--border2)}
+.ll-table td{padding:3px 4px;border-bottom:1px solid var(--border2);color:var(--text2)}
+.ll-table tr:last-child td{border-bottom:none}
+.load-bar{display:inline-block;height:6px;border-radius:2px;vertical-align:middle}
+
+/* ATP/SKU table */
+.sk-table{width:100%;border-collapse:collapse;font-size:9.5px}
+.sk-table th{color:var(--text3);text-transform:uppercase;font-size:8px;letter-spacing:.07em;padding:2px 4px;text-align:left;font-weight:600;border-bottom:1px solid var(--border2)}
+.sk-table td{padding:3px 4px;border-bottom:1px solid var(--border2);color:var(--text2)}
+.sk-table tr:last-child td{border-bottom:none}
+.sk-table tr:hover td{background:var(--bg3)}
+.dos-chip{font-size:8px;padding:1px 5px;border-radius:20px;font-family:var(--font-sans);font-weight:600}
+.dos-ok{background:var(--green-bg);color:var(--green)}
+.dos-warn{background:var(--amber-bg);color:var(--amber)}
+.dos-crit{background:var(--red-bg);color:var(--red)}
+
+/* Tooltip */
+#tooltip{position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:10px;pointer-events:none;display:none;z-index:1000;max-width:200px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── Top Bar ────────────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="logo">SUPPLY STREAM<span> CHART</span>
+    <sub>SUNTORY PEPSICO THAILAND — TRADING CHART ENGINE v2.0</sub>
+  </div>
+  <div class="divider"></div>
+
+  <div class="ctrl-group">
+    <span class="ctrl-label">Plant</span>
+    <select id="sel-plant">
+      <option value="all">All Plants</option>
+      <option value="7101" selected>7101 · Rayong (RY)</option>
+      <option value="7102">7102 · Saraburi (SR)</option>
+      <option value="7104">7104 · Siam Water (SW)</option>
+      <option value="7106">7106 · Prime Water (PW)</option>
+    </select>
+  </div>
+
+  <div class="ctrl-group">
+    <span class="ctrl-label">SKU</span>
+    <select id="sel-sku" style="min-width:200px"></select>
+  </div>
+
+  <div class="ctrl-group">
+    <span class="ctrl-label">Unit</span>
+    <select id="sel-unit">
+      <option value="rc">RC (Raw Cases)</option>
+      <option value="8oz">8oz Equiv.</option>
+      <option value="pl">Pallets</option>
+    </select>
+  </div>
+
+  <div class="ctrl-group">
+    <button class="btn active" id="btn-w">Weekly</button>
+    <button class="btn" id="btn-m">Monthly</button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <span class="tag tag-demo" id="data-source-tag" title="Click to try loading real data">DEMO DATA</span>
+  <span style="font-size:9px;color:var(--text3)" id="snapshot-date">Snapshot: 2 Mar 2026</span>
+</div>
+
+<!-- ── KPI Bar ─────────────────────────────────────────────────────────── -->
+<div class="kpi-bar">
+  <div class="kpi">
+    <div class="kpi-label">Current Stock</div>
+    <div class="kpi-val" id="kpi-stock">—</div>
+    <div class="kpi-sub" id="kpi-stock-sub">RC (cases)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Days of Stock</div>
+    <div class="kpi-val" id="kpi-dos">—</div>
+    <div class="kpi-sub">days at current rate</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Weekly Demand</div>
+    <div class="kpi-val" id="kpi-demand">—</div>
+    <div class="kpi-sub">RC/wk (post-fcst)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Weekly Supply</div>
+    <div class="kpi-val" id="kpi-supply">—</div>
+    <div class="kpi-sub">RC/wk (planned)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">D/S Gap</div>
+    <div class="kpi-val" id="kpi-gap">—</div>
+    <div class="kpi-sub">supply − demand</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">WH Utilization</div>
+    <div class="kpi-val" id="kpi-wh">—</div>
+    <div class="kpi-sub">of capacity</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Stockout Risk</div>
+    <div class="kpi-val" id="kpi-risk">—</div>
+    <div class="kpi-sub">SKUs &lt; 7 DOS</div>
+  </div>
+</div>
+
+<!-- ── Main Area ──────────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-title">SKU Selection</div>
+      <div id="sku-list"></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Demand Signals</div>
+      <div id="demand-legend">
+        <div class="legend-row leg-toggle" data-series="ibp">
+          <div class="legend-dot" style="background:#58a6ff;height:2px"></div>
+          <span>IBP Forecast</span>
+        </div>
+        <div class="legend-row leg-toggle" data-series="pre">
+          <div class="legend-dot" style="background:#bc8cff;height:2px"></div>
+          <span>Pre-Forecast</span>
+        </div>
+        <div class="legend-row leg-toggle" data-series="post">
+          <div class="legend-dot" style="background:#d29922;height:2px;width:12px"></div>
+          <span>Post-Forecast</span>
+        </div>
+        <div class="legend-row leg-toggle" data-series="actual">
+          <div class="legend-dot" style="background:#3fb950;height:2px"></div>
+          <span>Actual Sales</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-sq" style="background:rgba(38,166,154,.25);border:1px solid #26a69a"></div>
+          <span>Production Order ▲</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-section" style="flex:1">
+      <div class="sb-title">Risk Alerts</div>
+      <div id="alert-list"></div>
+    </div>
+  </div>
+
+  <!-- Charts Column -->
+  <div class="charts-col">
+
+    <!-- Main OHLC Chart -->
+    <div class="chart-container" id="chart-main" style="flex:1;min-height:200px">
+      <div class="chart-title">
+        <div class="ct-main" id="chart-sku-title">INVENTORY OHLC</div>
+        <div class="ct-sub">Candlestick = Stock Level (RC) · Lines = Demand Signals · ▲ = Production Orders</div>
+      </div>
+      <div class="crosshair-info" id="xhair-info">
+        <div class="ci-row">
+          <span class="ci-label">W</span><span class="ci-val" id="ci-week">—</span>
+          <span class="ci-label ci-o">O</span><span class="ci-val ci-o" id="ci-o">—</span>
+          <span class="ci-label ci-h">H</span><span class="ci-val ci-h" id="ci-h">—</span>
+          <span class="ci-label ci-l">L</span><span class="ci-val ci-l" id="ci-l">—</span>
+          <span class="ci-label ci-c">C</span><span class="ci-val ci-c" id="ci-c">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-resizer" id="resize-prod"></div>
+
+    <!-- Production Volume Histogram -->
+    <div class="chart-container" id="chart-prod">
+      <div class="chart-title">
+        <div class="ct-main">PRODUCTION ORDERS</div>
+        <div class="ct-sub">Weekly production volume (RC) from SAP planned orders</div>
+      </div>
+    </div>
+
+    <div class="chart-resizer" id="resize-gap"></div>
+
+    <!-- D/S Gap -->
+    <div class="chart-container" id="chart-gap">
+      <div class="chart-title">
+        <div class="ct-main">D / S GAP</div>
+        <div class="ct-sub">Supply − Demand · <span style="color:var(--green)">▌surplus</span> <span style="color:var(--red)">▌shortage</span></div>
+      </div>
+    </div>
+
+    <!-- Bottom Panels -->
+    <div class="bottom-panel">
+      <!-- WH Utilization -->
+      <div class="bp-section" style="max-width:220px">
+        <div class="bp-title">WH Utilization
+          <span id="wh-week-label" style="color:var(--text2);font-size:8px;font-family:var(--font-mono)"></span>
+        </div>
+        <div id="wh-content"></div>
+      </div>
+
+      <!-- Line Load -->
+      <div class="bp-section" style="max-width:280px">
+        <div class="bp-title">Line Load Plan
+          <span style="color:var(--text2);font-size:8px" id="ll-plant-label"></span>
+        </div>
+        <div id="ll-content"></div>
+      </div>
+
+      <!-- Top SKUs by Stock / DOS -->
+      <div class="bp-section">
+        <div class="bp-title">Top SKUs — Days of Stock
+          <span id="tbl-plant-label" style="color:var(--text2);font-size:8px;font-family:var(--font-mono)"></span>
+        </div>
+        <div id="sku-table-content"></div>
+      </div>
+    </div>
+
+  </div><!-- end charts-col -->
+</div><!-- end main -->
+</div><!-- end app -->
+
+<div id="tooltip"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  SUPPLY STREAM DASHBOARD — Trading Chart Engine
+//  Suntory PepsiCo Thailand
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const W01 = new Date('2025-12-29'); // ISO W01-2026 Monday
+const SNAPSHOT_WEEK = 9;            // W09 = Feb 23 (inventory snapshot week)
+const NUM_WEEKS = 52;
+
+const COLORS = {
+  ibp:    '#58a6ff',
+  pre:    '#bc8cff',
+  post:   '#d29922',
+  actual: '#3fb950',
+  up:     '#26a69a',
+  down:   '#ef5350',
+  prod:   'rgba(38,166,154,0.7)',
+  gap_up: '#3fb950',
+  gap_dn: '#f85149',
+};
+
+const BRAND_COLORS = ['#58a6ff','#3fb950','#d29922','#bc8cff','#39d353','#e3b341'];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = {
+  skus: [],
+  selectedSku: 0,
+  plant: '7101',
+  unit: 'rc',
+  period: 'weekly',
+  ohlcData: {},      // sku_id → [{time,open,high,low,close}]
+  demandData: {},    // sku_id → {ibp:[],pre:[],post:[],actual:[]}
+  prodData: {},      // sku_id → [{time,value}]
+  gapData: {},       // sku_id → [{time,value,color}]
+  whData: [],
+  llData: [],
+  atpData: [],
+  alerts: [],
+  kpis: {},
+  seriesVisible: {ibp:true, pre:true, post:true, actual:true},
+  dataSource: 'demo',
+};
+
+// ── Chart references ───────────────────────────────────────────────────────────
+let mainChart, candleSeries;
+let demSeries = {};  // ibp, pre, post, actual
+let prodChart, prodSeries;
+let gapChart, gapSeries;
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DEMO DATA GENERATOR
+// ══════════════════════════════════════════════════════════════════════════════
+function weekDate(i) {
+  const d = new Date(W01);
+  d.setDate(d.getDate() + i * 7);
+  return d.toISOString().slice(0, 10);
+}
+
+function seasonFactor(weekIdx) {
+  // Hot season Mar-May (+20-30%), festive Dec (+25%), rainy Jun-Aug (base)
+  const month = new Date(W01.getTime() + weekIdx * 7 * 86400000).getMonth();
+  return [1.00, 1.05, 1.20, 1.30, 1.28, 1.10, 0.95, 0.92, 1.00, 1.10, 1.18, 1.28][month] ?? 1.0;
+}
+
+function jitter(base, pct = 0.1) {
+  return base * (1 + (Math.random() - 0.5) * 2 * pct);
+}
+
+function seededRand(seed, i) {
+  // Simple deterministic pseudo-random for reproducible demo
+  const x = Math.sin(seed * 9301 + i * 49297 + 233) * 93737;
+  return x - Math.floor(x);
+}
+
+function generateSkuData(sku, idx) {
+  const seed = idx * 7 + 3;
+  const baseDemand = sku.baseDemand;
+  const ohlc = [], ibp = [], pre = [], post = [], actual = [], prod = [], gap = [];
+
+  // Production schedule: production run every 2-4 weeks, varying quantity
+  let stock = sku.startStock;
+  const SNAP = SNAPSHOT_WEEK;
+
+  for (let i = 0; i < NUM_WEEKS; i++) {
+    const time = weekDate(i);
+    const sf = seasonFactor(i);
+    const noise = seededRand(seed, i);
+    const d = Math.round(jitter(baseDemand * sf, 0.08));
+
+    // Production: runs every 2-4 weeks (deterministic based on seed)
+    const prodCycle = Math.floor(2 + seededRand(seed+1, i) * 2.5);
+    const isProdWeek = (i + Math.floor(seededRand(seed+2, 0) * 3)) % prodCycle === 0;
+    const s = isProdWeek ? Math.round(baseDemand * sf * (2.0 + seededRand(seed+3, i) * 1.5)) : 0;
+
+    const open  = Math.max(0, stock);
+    const high  = s > 0 ? open + s : Math.max(open, Math.round(open * 1.02));
+    const close = Math.max(0, open + s - d);
+    const low   = Math.min(open, close);
+
+    // Demand signals
+    const ibpV  = Math.round(baseDemand * sf * (1.04 + seededRand(seed+4, i) * 0.04));
+    const preV  = Math.round(ibpV * (0.97 + seededRand(seed+5, i) * 0.04));
+    const postV = Math.round(preV * (0.98 + seededRand(seed+6, i) * 0.04));
+    const actV  = i <= SNAP ? Math.round(d * (0.97 + seededRand(seed+7, i) * 0.06)) : null;
+
+    ohlc.push({time, open, high, low, close});
+    ibp.push({time, value: ibpV});
+    pre.push({time, value: preV});
+    post.push({time, value: postV});
+    if (actV !== null) actual.push({time, value: actV});
+    if (s > 0) prod.push({time, value: s, color: COLORS.prod});
+    gap.push({time, value: s - d, color: (s - d) >= 0 ? COLORS.gap_up : COLORS.gap_dn});
+
+    stock = close;
+  }
+  return {ohlc, demand:{ibp, pre, post, actual}, prod, gap};
+}
+
+const DEMO_SKUS = [
+  {id:1, material:'32000001', name:'PEPSI PET 1.25L P12',     brand:'PEPSI',   plant:'7101', plant_short:'RY', pack_type:'PET', baseDemand:9800,  startStock:45000},
+  {id:2, material:'32000025', name:'PEPSI PET 600ml P24',      brand:'PEPSI',   plant:'7101', plant_short:'RY', pack_type:'PET', baseDemand:7200,  startStock:32000},
+  {id:3, material:'32000100', name:'7UP PET 1.25L P12',        brand:'7UP',     plant:'7101', plant_short:'RY', pack_type:'PET', baseDemand:6500,  startStock:28000},
+  {id:4, material:'32000200', name:'MIRINDA ORA PET 500ml P24',brand:'MIRINDA', plant:'7102', plant_short:'SR', pack_type:'PET', baseDemand:5100,  startStock:21000},
+  {id:5, material:'32000350', name:'PEPSI CAN 325ml P24',      brand:'PEPSI',   plant:'7101', plant_short:'RY', pack_type:'CAN', baseDemand:8300,  startStock:38000},
+  {id:6, material:'32000400', name:'7UP CAN 325ml P24',        brand:'7UP',     plant:'7102', plant_short:'SR', pack_type:'CAN', baseDemand:4200,  startStock:17500},
+  {id:7, material:'32000500', name:'PEPSI PET 2L P6',          brand:'PEPSI',   plant:'7102', plant_short:'SR', pack_type:'PET', baseDemand:3800,  startStock:14000},
+  {id:8, material:'32000600', name:'BOSS COFFEE CAN 180ml P24',brand:'BOSS',    plant:'7101', plant_short:'RY', pack_type:'CAN', baseDemand:4900,  startStock:19000},
+];
+
+const DEMO_WH = [
+  {location:'RY-FG01', capacity:8000, plant_id:1},
+  {location:'SR-FG02', capacity:5000, plant_id:2},
+];
+
+const DEMO_LINES = [
+  {plant:'7101',plant_short:'RY',line:'LINE2-1',type:'PET',bpm:600},
+  {plant:'7101',plant_short:'RY',line:'LINE2-2',type:'PET',bpm:600},
+  {plant:'7101',plant_short:'RY',line:'LINE2-3',type:'PET',bpm:700},
+  {plant:'7101',plant_short:'RY',line:'LINE2-5',type:'CAN',bpm:800},
+  {plant:'7101',plant_short:'RY',line:'LINE2-6',type:'CAN',bpm:800},
+  {plant:'7102',plant_short:'SR',line:'LINE3-1',type:'PET',bpm:600},
+  {plant:'7102',plant_short:'SR',line:'LINE3-2',type:'PET',bpm:600},
+  {plant:'7102',plant_short:'SR',line:'LINE3-3',type:'CAN',bpm:800},
+];
+
+function loadDemoData() {
+  state.dataSource = 'demo';
+  document.getElementById('data-source-tag').textContent = 'DEMO DATA';
+  document.getElementById('data-source-tag').className = 'tag tag-demo';
+
+  state.skus = DEMO_SKUS;
+  DEMO_SKUS.forEach((sku, idx) => {
+    const d = generateSkuData(sku, idx);
+    state.ohlcData[sku.id]   = d.ohlc;
+    state.demandData[sku.id] = d.demand;
+    state.prodData[sku.id]   = d.prod;
+    state.gapData[sku.id]    = d.gap;
+  });
+
+  // WH data
+  state.whData = DEMO_WH.map((wh, wi) => {
+    const rows = [];
+    for (let i = 0; i < NUM_WEEKS; i++) {
+      const util = 55 + 25 * seasonFactor(i) * (0.9 + seededRand(wi, i) * 0.2);
+      const end  = Math.round(wh.capacity * Math.min(util / 100, 0.98));
+      const prod = Math.round(end * 0.12 * (0.8 + seededRand(wi+1, i) * 0.4));
+      const dem  = Math.round(end * 0.14 * (0.8 + seededRand(wi+2, i) * 0.4));
+      rows.push({time: weekDate(i), week_label: `w${String(i+1).padStart(2,'0')}`,
+                 location_code: wh.location, capacity_pallets: wh.capacity,
+                 end_pallets: end, production_in_pallets: prod, demand_out_pallets: dem,
+                 begin_pallets: Math.max(0, end - prod + dem),
+                 utilization_pct: Math.min(98, util).toFixed(1), plant_id: wh.plant_id});
+    }
+    return rows;
+  }).flat();
+
+  // Line load data (current week)
+  state.llData = DEMO_LINES.map((ln, li) => {
+    const base = 60 + seededRand(li, SNAPSHOT_WEEK) * 35;
+    return {
+      plant_id: ln.plant, plant_short: ln.plant_short,
+      line_code: ln.line, line_type: ln.type,
+      load_pct: base.toFixed(1),
+      efficiency_pct: (86 + seededRand(li+3, 0) * 8).toFixed(1),
+      volume_load_rc: Math.round(50000 + seededRand(li+4, 0) * 30000),
+      week_label: 'w09',
+    };
+  });
+
+  // KPIs (aggregate)
+  const SNAP = SNAPSHOT_WEEK;
+  let totStock=0, totDem=0, totSup=0, riskCount=0;
+  state.skus.forEach(sku => {
+    const ohlc = state.ohlcData[sku.id];
+    if (!ohlc || !ohlc[SNAP]) return;
+    totStock += ohlc[SNAP].close;
+    totDem   += state.demandData[sku.id].post[SNAP]?.value || 0;
+    totSup   += state.prodData[sku.id].find(p => p.time === weekDate(SNAP))?.value || 0;
+    const dos = totDem > 0 ? ohlc[SNAP].close / (totDem / 7) : 99;
+    if (dos < 7) riskCount++;
+  });
+  state.kpis = {
+    total_stock: totStock,
+    weekly_demand: totDem,
+    weekly_supply: totSup,
+    dos: totDem > 0 ? (totStock / totDem * 7).toFixed(1) : '—',
+    wh_util: '72.4',
+    risk_skus: riskCount,
+  };
+
+  // Alerts
+  state.alerts = state.skus.slice(0, 6).map((sku, i) => {
+    const ohlc = state.ohlcData[sku.id][SNAP];
+    const dem  = state.demandData[sku.id].post[SNAP]?.value || 1;
+    const dos  = ohlc ? (ohlc.close / dem * 7).toFixed(1) : '?';
+    const dosN = parseFloat(dos);
+    return {
+      material: sku.material,
+      name: sku.name,
+      brand: sku.brand,
+      plant_short: sku.plant_short,
+      dos_7d: dosN,
+      severity: dosN < 7 ? 'CRITICAL' : dosN < 14 ? 'HIGH' : 'MEDIUM',
+      msg: dosN < 7 ? `Stockout risk! DOS ${dos}d` : dosN < 14 ? `Low stock DOS ${dos}d` : `DOS ${dos}d — monitor`,
+    };
+  }).sort((a,b) => a.dos_7d - b.dos_7d);
+
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  REAL DATA LOADER (fetch from data/api/*.json)
+// ══════════════════════════════════════════════════════════════════════════════
+async function tryLoadRealData() {
+  try {
+    const [skuRes, ohlcRes, demRes, prodRes, whRes, llRes, kpiRes, alertRes] = await Promise.all([
+      fetch('data/api/sku_list.json'),
+      fetch('data/api/inventory_ohlc.json'),
+      fetch('data/api/demand_signal.json'),
+      fetch('data/api/production_orders.json'),
+      fetch('data/api/wh_space.json'),
+      fetch('data/api/line_load.json'),
+      fetch('data/api/kpis.json'),
+      fetch('data/api/alerts.json'),
+    ]);
+
+    if (!skuRes.ok || !ohlcRes.ok) throw new Error('API files not found');
+
+    const [skus, ohlcAll, demAll, prodAll, whAll, llAll, kpis, alerts] = await Promise.all([
+      skuRes.json(), ohlcRes.json(), demRes.json(), prodAll ? prodRes.json() : [],
+      whRes.json(), llRes.json(), kpiRes.json(), alertRes.json(),
+    ]);
+
+    state.dataSource = 'real';
+    document.getElementById('data-source-tag').textContent = 'LIVE DATA';
+    document.getElementById('data-source-tag').className = 'tag tag-live';
+
+    // Process SKUs
+    state.skus = skus.map(s => ({
+      id: s.sku_id, material: s.material_code,
+      name: s.name, brand: s.brand || 'UNKNOWN',
+      plant: s.plant_code, plant_short: s.plant_short || '',
+      pack_type: s.pack_type || 'PET',
+    }));
+
+    // Process OHLC
+    state.ohlcData = {};
+    ohlcAll.forEach(row => {
+      if (!state.ohlcData[row.sku_id]) state.ohlcData[row.sku_id] = [];
+      state.ohlcData[row.sku_id].push({
+        time: row.time, open: +row.open||0, high: +row.high||0,
+        low: +row.low||0, close: +row.close||0,
+      });
+    });
+
+    // Process demand
+    state.demandData = {};
+    demAll.forEach(row => {
+      if (!state.demandData[row.sku_id]) state.demandData[row.sku_id] = {ibp:[],pre:[],post:[],actual:[]};
+      const t = row.demand_type?.toUpperCase() || 'POST_FCST';
+      const key = t.includes('IBP') ? 'ibp' : t.includes('PRE') ? 'pre' : t.includes('POST') ? 'post' : t.includes('ACTUAL') ? 'actual' : 'post';
+      state.demandData[row.sku_id][key].push({time: row.time, value: +row.value||0});
+    });
+
+    // Process production orders
+    state.prodData = {};
+    const prodRows = await prodRes.json().catch(() => []);
+    prodRows.forEach(row => {
+      if (!state.prodData[row.sku_id]) state.prodData[row.sku_id] = [];
+      state.prodData[row.sku_id].push({time: row.time, value: +(row.planned_qty||row.gr_qty)||0, color: COLORS.prod});
+    });
+
+    // Compute gap from ohlc
+    state.gapData = {};
+    Object.entries(state.ohlcData).forEach(([id, rows]) => {
+      state.gapData[id] = rows.map(r => ({
+        time: r.time,
+        value: r.units_produced - r.units_consumed,
+        color: (r.units_produced - r.units_consumed) >= 0 ? COLORS.gap_up : COLORS.gap_dn,
+      }));
+    });
+
+    state.whData  = whAll;
+    state.llData  = llAll;
+    state.kpis    = kpis;
+    state.alerts  = alerts;
+
+    renderAll();
+  } catch (e) {
+    console.log('Real data not available:', e.message, '— using demo data');
+    loadDemoData();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  CHART INITIALIZATION
+// ══════════════════════════════════════════════════════════════════════════════
+function chartOptions(height) {
+  return {
+    height,
+    layout: {
+      background: {color: '#0d1117'},
+      textColor: '#8b949e',
+      fontFamily: "'DM Mono', monospace",
+    },
+    grid: {
+      vertLines: {color: '#21262d'},
+      horzLines: {color: '#21262d'},
+    },
+    crosshair: {mode: LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale: {
+      borderColor: '#30363d',
+      scaleMargins: {top: 0.08, bottom: 0.08},
+    },
+    timeScale: {
+      borderColor: '#30363d',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+    handleScroll: {mouseWheel: true, pressedMouseMove: true},
+    handleScale:  {mouseWheel: true, pinch: true},
+  };
+}
+
+function initCharts() {
+  const mainEl = document.getElementById('chart-main');
+  const prodEl = document.getElementById('chart-prod');
+  const gapEl  = document.getElementById('chart-gap');
+
+  mainChart = LightweightCharts.createChart(mainEl, {
+    ...chartOptions(mainEl.clientHeight),
+    width: mainEl.clientWidth,
+    watermark: {visible: false},
+  });
+
+  candleSeries = mainChart.addCandlestickSeries({
+    upColor:        '#26a69a',
+    downColor:      '#ef5350',
+    borderUpColor:  '#26a69a',
+    borderDownColor:'#ef5350',
+    wickUpColor:    '#26a69a',
+    wickDownColor:  '#ef5350',
+  });
+
+  demSeries.ibp    = mainChart.addLineSeries({color: COLORS.ibp,    lineWidth: 1.5, lineStyle: 0, priceLineVisible: false, lastValueVisible: false});
+  demSeries.pre    = mainChart.addLineSeries({color: COLORS.pre,    lineWidth: 1.5, lineStyle: 2, priceLineVisible: false, lastValueVisible: false});
+  demSeries.post   = mainChart.addLineSeries({color: COLORS.post,   lineWidth: 2,   lineStyle: 0, priceLineVisible: false, lastValueVisible: false});
+  demSeries.actual = mainChart.addLineSeries({color: COLORS.actual, lineWidth: 2,   lineStyle: 0, priceLineVisible: false, lastValueVisible: false});
+
+  // Production chart
+  prodChart = LightweightCharts.createChart(prodEl, {
+    ...chartOptions(prodEl.clientHeight),
+    width: prodEl.clientWidth,
+    rightPriceScale: {
+      borderColor: '#30363d',
+      scaleMargins: {top: 0.1, bottom: 0.05},
+    },
+    timeScale: {borderColor: '#30363d', visible: false},
+  });
+  prodSeries = prodChart.addHistogramSeries({
+    color: 'rgba(38,166,154,0.6)',
+    priceLineVisible: false,
+    lastValueVisible: false,
+  });
+
+  // Gap chart
+  gapChart = LightweightCharts.createChart(gapEl, {
+    ...chartOptions(gapEl.clientHeight),
+    width: gapEl.clientWidth,
+    rightPriceScale: {
+      borderColor: '#30363d',
+      scaleMargins: {top: 0.1, bottom: 0.1},
+    },
+    timeScale: {borderColor: '#30363d', visible: true, timeVisible: true},
+  });
+  gapSeries = gapChart.addHistogramSeries({
+    priceLineVisible: false,
+    lastValueVisible: false,
+  });
+
+  // Sync timescales
+  let isSyncing = false;
+  function syncRange(source, targets) {
+    source.timeScale().subscribeVisibleLogicalRangeChange(range => {
+      if (isSyncing || !range) return;
+      isSyncing = true;
+      targets.forEach(t => t.timeScale().setVisibleLogicalRange(range));
+      isSyncing = false;
+    });
+  }
+  syncRange(mainChart, [prodChart, gapChart]);
+  syncRange(prodChart, [mainChart, gapChart]);
+  syncRange(gapChart,  [mainChart, prodChart]);
+
+  // Crosshair info
+  const xhairEl = document.getElementById('xhair-info');
+  mainChart.subscribeCrosshairMove(param => {
+    if (!param.time || !param.seriesData) {
+      xhairEl.style.display = 'none';
+      return;
+    }
+    const d = param.seriesData.get(candleSeries);
+    if (!d) return;
+    xhairEl.style.display = 'block';
+    document.getElementById('ci-week').textContent = param.time;
+    document.getElementById('ci-o').textContent = fmtN(d.open);
+    document.getElementById('ci-h').textContent = fmtN(d.high);
+    document.getElementById('ci-l').textContent = fmtN(d.low);
+    document.getElementById('ci-c').textContent = fmtN(d.close);
+  });
+
+  // Resize observer
+  const ro = new ResizeObserver(() => {
+    mainChart.resize(mainEl.clientWidth, mainEl.clientHeight);
+    prodChart.resize(prodEl.clientWidth, prodEl.clientHeight);
+    gapChart.resize(gapEl.clientWidth, gapEl.clientHeight);
+  });
+  ro.observe(mainEl);
+  ro.observe(prodEl);
+  ro.observe(gapEl);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  RENDER FUNCTIONS
+// ══════════════════════════════════════════════════════════════════════════════
+function fmtN(n, dec=0) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('en-US', {maximumFractionDigits: dec});
+}
+
+function renderAll() {
+  renderSkuList();
+  updateCharts(state.selectedSku || (state.skus[0]?.id));
+  renderKPIs();
+  renderAlerts();
+  renderWhUtilization();
+  renderLineLoad();
+}
+
+function renderSkuList() {
+  const plant = state.plant;
+  const el = document.getElementById('sku-list');
+  el.innerHTML = '';
+
+  // Populate select dropdown too
+  const sel = document.getElementById('sel-sku');
+  sel.innerHTML = '';
+
+  const filtered = state.skus.filter(s => plant === 'all' || s.plant === plant || !s.plant);
+  filtered.forEach((sku, i) => {
+    const color = BRAND_COLORS[i % BRAND_COLORS.length];
+    const ohlc  = state.ohlcData[sku.id];
+    const stock  = ohlc ? (ohlc[SNAPSHOT_WEEK] || ohlc[ohlc.length-1])?.close : 0;
+    const active = sku.id === state.selectedSku;
+
+    // Sidebar item
+    const div = document.createElement('div');
+    div.className = 'sku-item' + (active ? ' active' : '');
+    div.innerHTML = `
+      <div class="sku-dot" style="background:${color}"></div>
+      <div class="sku-info">
+        <div class="sku-name">${sku.name}</div>
+        <div class="sku-sub">${sku.material} · ${sku.plant_short || sku.plant}</div>
+      </div>
+      <div class="sku-stock" style="color:${color}">${fmtN(stock)}</div>
+    `;
+    div.onclick = () => selectSku(sku.id);
+    el.appendChild(div);
+
+    // Dropdown option
+    const opt = document.createElement('option');
+    opt.value = sku.id;
+    opt.textContent = `${sku.name} (${sku.material})`;
+    if (active) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function selectSku(skuId) {
+  state.selectedSku = skuId;
+  renderSkuList();
+  updateCharts(skuId);
+  renderKPIs();
+  document.getElementById('sel-sku').value = skuId;
+
+  const sku = state.skus.find(s => s.id === skuId);
+  if (sku) document.getElementById('chart-sku-title').textContent =
+    `INVENTORY OHLC — ${sku.name} (${sku.material})`;
+}
+
+function updateCharts(skuId) {
+  if (!skuId) return;
+  state.selectedSku = skuId;
+
+  const ohlc   = state.ohlcData[skuId]   || [];
+  const demand = state.demandData[skuId] || {ibp:[],pre:[],post:[],actual:[]};
+  const prod   = state.prodData[skuId]   || [];
+  const gap    = state.gapData[skuId]    || [];
+
+  // Sort by time
+  const sort = arr => [...arr].sort((a,b) => a.time < b.time ? -1 : 1);
+
+  // OHLC — Ensure no duplicates, sorted
+  const ohlcDeduped = sort(ohlc).filter((v,i,a) => i===0 || v.time !== a[i-1].time);
+  candleSeries.setData(ohlcDeduped);
+
+  // Demand lines
+  Object.entries(demSeries).forEach(([key, series]) => {
+    const data = sort(demand[key] || []).filter((v,i,a) => i===0 || v.time !== a[i-1].time);
+    series.setData(data);
+    series.applyOptions({visible: state.seriesVisible[key] !== false});
+  });
+
+  // Production markers on candlestick
+  const markers = sort(prod).map(p => ({
+    time: p.time,
+    position: 'belowBar',
+    color: '#26a69a',
+    shape: 'arrowUp',
+    text: `+${fmtN(p.value)}`,
+  }));
+  candleSeries.setMarkers(markers);
+
+  // Production histogram
+  prodSeries.setData(sort(prod).filter((v,i,a) => i===0 || v.time !== a[i-1].time));
+
+  // Gap histogram
+  gapSeries.setData(sort(gap).filter((v,i,a) => i===0 || v.time !== a[i-1].time));
+
+  // Fit to content
+  mainChart.timeScale().fitContent();
+  prodChart.timeScale().fitContent();
+  gapChart.timeScale().fitContent();
+
+  // Update bottom table
+  renderSkuTable();
+}
+
+function renderKPIs() {
+  const skuId = state.selectedSku;
+  const sku   = state.skus.find(s => s.id === skuId);
+  const ohlc  = state.ohlcData[skuId];
+
+  if (ohlc && ohlc.length > 0) {
+    const snap = ohlc[Math.min(SNAPSHOT_WEEK, ohlc.length-1)];
+    const dem  = state.demandData[skuId]?.post[SNAPSHOT_WEEK]?.value || 0;
+    const supRow = state.prodData[skuId]?.find(p => p.time === weekDate(SNAPSHOT_WEEK));
+    const sup  = supRow?.value || 0;
+    const dos  = dem > 0 ? (snap.close / dem * 7).toFixed(1) : '—';
+    const gap  = sup - dem;
+    const dosN = parseFloat(dos);
+
+    document.getElementById('kpi-stock').textContent = fmtN(snap.close) + ' RC';
+    document.getElementById('kpi-stock').className = 'kpi-val';
+    document.getElementById('kpi-dos').textContent = dos + 'd';
+    document.getElementById('kpi-dos').className = 'kpi-val ' + (dosN < 7 ? 'down' : dosN < 14 ? 'warn' : 'up');
+    document.getElementById('kpi-demand').textContent = fmtN(dem);
+    document.getElementById('kpi-supply').textContent = fmtN(sup);
+    document.getElementById('kpi-gap').textContent = (gap >= 0 ? '+' : '') + fmtN(gap);
+    document.getElementById('kpi-gap').className = 'kpi-val ' + (gap >= 0 ? 'up' : 'down');
+  } else if (state.kpis.total_stock) {
+    document.getElementById('kpi-stock').textContent = fmtN(state.kpis.total_stock);
+    document.getElementById('kpi-dos').textContent = state.kpis.dos + 'd';
+    document.getElementById('kpi-demand').textContent = fmtN(state.kpis.weekly_demand);
+    document.getElementById('kpi-supply').textContent = fmtN(state.kpis.weekly_supply);
+    const gap = (state.kpis.weekly_supply||0) - (state.kpis.weekly_demand||0);
+    document.getElementById('kpi-gap').textContent = (gap>=0?'+':'') + fmtN(gap);
+    document.getElementById('kpi-gap').className = 'kpi-val ' + (gap>=0?'up':'down');
+  }
+
+  // WH utilization
+  const whSnap = state.whData.filter(w => {
+    const plantFilter = state.plant === 'all' || (w.plant_id && String(w.plant_id) === state.plant);
+    return plantFilter;
+  });
+  if (whSnap.length) {
+    const latest = whSnap.sort((a,b)=>b.time<a.time?-1:1)[0];
+    document.getElementById('kpi-wh').textContent = latest.utilization_pct + '%';
+    const util = parseFloat(latest.utilization_pct);
+    document.getElementById('kpi-wh').className = 'kpi-val ' + (util > 90 ? 'down' : util > 75 ? 'warn' : 'up');
+  }
+
+  document.getElementById('kpi-risk').textContent = state.kpis.risk_skus || state.alerts.filter(a=>a.severity==='CRITICAL').length;
+  document.getElementById('kpi-risk').className = 'kpi-val ' + (state.kpis.risk_skus > 0 ? 'down' : 'up');
+}
+
+function renderAlerts() {
+  const el = document.getElementById('alert-list');
+  el.innerHTML = '';
+  const alerts = state.alerts.slice(0, 8);
+  alerts.forEach(a => {
+    const sev = (a.severity||'MEDIUM').toUpperCase();
+    const cls = sev === 'CRITICAL' ? 'alert-crit' : sev === 'HIGH' ? 'alert-high' : 'alert-med';
+    const dos = typeof a.dos_7d === 'number' ? a.dos_7d.toFixed(1) : (a.dos_7d||'?');
+    const msg = a.msg || a.message || `DOS ${dos}d`;
+    const div = document.createElement('div');
+    div.className = `alert-item ${cls}`;
+    div.innerHTML = `
+      <div class="alert-mat">${(a.name||a.material||'—').substring(0,28)}</div>
+      <div class="alert-msg">${a.plant_short||''} · ${msg}</div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function renderWhUtilization() {
+  const el = document.getElementById('wh-content');
+  el.innerHTML = '';
+
+  const plant = state.plant;
+  // Group by location, get latest week
+  const byLoc = {};
+  state.whData.forEach(row => {
+    const key = row.location_code || row.location;
+    if (plant !== 'all' && row.plant_id && String(row.plant_id) !== plant) return;
+    if (!byLoc[key] || row.time > byLoc[key].time) byLoc[key] = row;
+  });
+
+  const locations = Object.values(byLoc);
+  if (!locations.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:9px">No WH data available</div>';
+    return;
+  }
+
+  document.getElementById('wh-week-label').textContent = locations[0]?.week_label || '';
+
+  locations.forEach(loc => {
+    const util = parseFloat(loc.utilization_pct) || 0;
+    const color = util > 90 ? 'var(--red)' : util > 75 ? 'var(--amber)' : 'var(--green)';
+    const div = document.createElement('div');
+    div.className = 'wh-row';
+    div.innerHTML = `
+      <div class="wh-label">${(loc.location_code||loc.location||'—').substring(0,7)}</div>
+      <div class="wh-bar-track">
+        <div class="wh-bar-fill" style="width:${Math.min(util,100)}%;background:${color}"></div>
+      </div>
+      <div class="wh-pct" style="color:${color}">${util.toFixed(0)}%</div>
+    `;
+    el.appendChild(div);
+  });
+
+  // Add pallet counts
+  const totEnd  = locations.reduce((s,l) => s + (+l.end_pallets||0), 0);
+  const totCap  = locations.reduce((s,l) => s + (+l.capacity_pallets||0), 0);
+  if (totCap > 0) {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'font-size:9px;color:var(--text3);margin-top:6px;padding-top:4px;border-top:1px solid var(--border2)';
+    footer.textContent = `Total: ${fmtN(totEnd)} / ${fmtN(totCap)} PL`;
+    el.appendChild(footer);
+  }
+}
+
+function renderLineLoad() {
+  const el  = document.getElementById('ll-content');
+  const plant = state.plant;
+  el.innerHTML = '';
+
+  const lines = state.llData.filter(l =>
+    plant === 'all' || l.plant_id === plant || l.plant_short === ['RY','SR','SW','PW'][['7101','7102','7104','7106'].indexOf(plant)]
+  );
+
+  if (!lines.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:9px">No line load data</div>';
+    return;
+  }
+
+  document.getElementById('ll-plant-label').textContent = lines[0]?.plant_short || '';
+
+  const table = document.createElement('table');
+  table.className = 'll-table';
+  table.innerHTML = '<thead><tr><th>Line</th><th>Type</th><th>Load %</th><th>NE %</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  lines.slice(0, 10).forEach(l => {
+    const load = parseFloat(l.load_pct) || 0;
+    const ne   = parseFloat(l.efficiency_pct) || 0;
+    const color = load > 100 ? 'var(--red)' : load > 85 ? 'var(--amber)' : 'var(--green)';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${l.line_code||l.line||'—'}</td>
+      <td><span class="tag" style="background:var(--bg3);color:var(--text2);padding:1px 4px;font-size:8px">${l.line_type||''}</span></td>
+      <td>
+        <div class="load-bar" style="width:${Math.min(load,100)}px;background:${color}"></div>
+        <span style="margin-left:4px;color:${color}">${load.toFixed(0)}%</span>
+      </td>
+      <td style="color:var(--text)">${ne.toFixed(0)}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  el.appendChild(table);
+}
+
+function renderSkuTable() {
+  const el = document.getElementById('sku-table-content');
+  el.innerHTML = '';
+  const plant = state.plant;
+  const filtered = state.skus.filter(s => plant === 'all' || s.plant === plant);
+
+  const rows = filtered.map(sku => {
+    const ohlc = state.ohlcData[sku.id];
+    if (!ohlc || !ohlc.length) return null;
+    const snap = ohlc[Math.min(SNAPSHOT_WEEK, ohlc.length-1)];
+    const dem  = state.demandData[sku.id]?.post[SNAPSHOT_WEEK]?.value || 0;
+    const dos  = dem > 0 ? (snap.close / dem * 7) : 999;
+    return {...sku, stock: snap.close, dos, dem};
+  }).filter(Boolean).sort((a,b) => a.dos - b.dos);
+
+  if (!rows.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:9px">No data</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'sk-table';
+  table.innerHTML = '<thead><tr><th>SKU</th><th>Brand</th><th>Stock</th><th>DOS</th><th>Demand/wk</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  rows.slice(0, 12).forEach(row => {
+    const dosN = row.dos;
+    const dosCls = dosN < 7 ? 'dos-crit' : dosN < 14 ? 'dos-warn' : 'dos-ok';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td title="${row.material}">${row.name.substring(0,22)}</td>
+      <td>${row.brand}</td>
+      <td>${fmtN(row.stock)}</td>
+      <td><span class="dos-chip ${dosCls}">${dosN > 99 ? '—' : dosN.toFixed(0)+'d'}</span></td>
+      <td>${fmtN(row.dem)}</td>
+    `;
+    tr.onclick = () => selectSku(row.id);
+    tr.style.cursor = 'pointer';
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  el.appendChild(table);
+}
+
+// ── Demand legend toggles ─────────────────────────────────────────────────────
+document.querySelectorAll('.leg-toggle').forEach(el => {
+  el.addEventListener('click', () => {
+    const key = el.dataset.series;
+    if (!key) return;
+    state.seriesVisible[key] = !state.seriesVisible[key];
+    el.classList.toggle('off', !state.seriesVisible[key]);
+    demSeries[key]?.applyOptions({visible: state.seriesVisible[key]});
+  });
+});
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+document.getElementById('sel-plant').addEventListener('change', e => {
+  state.plant = e.target.value;
+  const filtered = state.skus.filter(s => state.plant === 'all' || s.plant === state.plant);
+  if (filtered.length && !filtered.find(s => s.id === state.selectedSku)) {
+    state.selectedSku = filtered[0].id;
+  }
+  renderAll();
+});
+
+document.getElementById('sel-sku').addEventListener('change', e => {
+  selectSku(parseInt(e.target.value));
+});
+
+document.getElementById('btn-w').addEventListener('click', () => {
+  state.period = 'weekly';
+  document.getElementById('btn-w').classList.add('active');
+  document.getElementById('btn-m').classList.remove('active');
+});
+
+document.getElementById('btn-m').addEventListener('click', () => {
+  state.period = 'monthly';
+  document.getElementById('btn-m').classList.add('active');
+  document.getElementById('btn-w').classList.remove('active');
+});
+
+document.getElementById('data-source-tag').addEventListener('click', () => {
+  if (state.dataSource === 'demo') {
+    tryLoadRealData();
+  } else {
+    loadDemoData();
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  tryLoadRealData(); // will fall back to demo if JSON not found
+});
+
+window.addEventListener('resize', () => {
+  // ResizeObserver handles chart resizing
+  renderWhUtilization();
+  renderLineLoad();
+});
+</script>
+</body>
+</html>
