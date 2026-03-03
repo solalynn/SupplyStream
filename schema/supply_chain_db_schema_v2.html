@@ -1,1 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain DB Schema v2 — Suntory PepsiCo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f0ede8;--panel:#faf8f5;--border:#ddd8d0;--border-light:#ebe7e0;
+    --blue:#3a6bbf;--blue-l:#d6e2f5;--blue-s:#e8eef8;
+    --red:#d95f52;--red-l:#fae0dc;
+    --teal:#3a9e8f;--teal-l:#d3eeea;
+    --amber:#b07d2e;--amber-l:#f5e9d0;
+    --green:#4a8c6f;--green-l:#d8ede4;
+    --purple:#7c5fbf;--purple-l:#e8e2f5;
+    --text:#2c2a27;--text2:#5c584f;--muted:#9e9a90;--tag:#ede9e2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;padding:28px}
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(180,160,120,0.18) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;z-index:0}
+  .wrap{max-width:1400px;margin:0 auto;position:relative;z-index:1}
 
+  header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+  h1{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:clamp(16px,3vw,24px);letter-spacing:-0.5px}
+  h1 span{color:var(--blue)}
+  .sub{font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:.05em}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .b{font-size:9px;padding:2px 9px;border-radius:20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;letter-spacing:.07em}
+  .b-blue{background:var(--blue-l);border:1px solid var(--blue);color:var(--blue)}
+  .b-amber{background:var(--amber-l);border:1px solid var(--amber);color:var(--amber)}
+  .b-teal{background:var(--teal-l);border:1px solid var(--teal);color:var(--teal)}
+  .b-green{background:var(--green-l);border:1px solid var(--green);color:var(--green)}
+  .b-purple{background:var(--purple-l);border:1px solid var(--purple);color:var(--purple)}
+  .b-red{background:var(--red-l);border:1px solid var(--red);color:var(--red)}
+  .ver{font-size:10px;padding:4px 14px;border-radius:20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;background:var(--blue-l);border:1px solid var(--blue);color:var(--blue);white-space:nowrap}
+
+  .ohlc-hint{display:inline-flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .ot{font-size:8px;padding:2px 7px;border-radius:20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
+  .oo{background:var(--blue-l);color:var(--blue)}.oh{background:var(--green-l);color:var(--green)}
+  .ol{background:var(--red-l);color:var(--red)}.oc{background:var(--amber-l);color:var(--amber)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;background:var(--panel);border:1px solid var(--border);padding:9px 14px;border-radius:10px;box-shadow:0 1px 4px rgba(60,50,30,.06)}
+  .li{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--text2)}
+  .ld{width:7px;height:7px;border-radius:50%}
+  .ls{width:11px;height:7px;border-radius:2px}
+
+  .sec{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+  .sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+  .grid-wide{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:16px}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden;transition:border-color .2s,box-shadow .2s,transform .2s;animation:fu .5s both;box-shadow:0 2px 8px rgba(60,50,30,.06)}
+  .card:hover{border-color:var(--blue);box-shadow:0 6px 24px rgba(58,107,191,.12);transform:translateY(-2px)}
+  .card.is-new{border-left:3px solid var(--green)}
+  .card.is-upd{border-left:3px solid var(--amber)}
+  @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  .ch{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid var(--border-light);background:var(--tag)}
+  .chl{display:flex;align-items:center;gap:7px}
+  .ico{width:27px;height:27px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1px solid var(--border)}
+  .cn{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:11.5px}
+  .cd{font-size:8.5px;color:var(--muted);margin-top:1px}
+  .ct{font-size:8px;color:var(--muted);letter-spacing:.07em;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;background:var(--border-light);padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .nt{font-size:7.5px;background:var(--green-l);color:var(--green);border:1px solid var(--green);padding:1px 5px;border-radius:20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;margin-left:3px}
+  .ut{font-size:7.5px;background:var(--amber-l);color:var(--amber);border:1px solid var(--amber);padding:1px 5px;border-radius:20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;margin-left:3px}
+
+  .fl{}
+  .fr{display:flex;align-items:center;padding:5px 13px;border-bottom:1px solid var(--border-light);gap:7px;transition:background .15s}
+  .fr:last-child{border-bottom:none}
+  .fr:hover{background:var(--blue-s)}
+  .fr.nf{background:rgba(74,140,111,.04)}
+  .fr.nf:hover{background:rgba(74,140,111,.11)}
+  .fk-col{width:13px;font-size:8.5px;color:var(--amber);flex-shrink:0;font-weight:500}
+  .fn{flex:1;font-size:9.5px;color:var(--text2)}
+  .fn.pk{color:var(--amber);font-weight:500}
+  .fn.fk{color:var(--teal)}
+  .fn.ind{color:var(--teal)}
+  .ft{font-size:7.5px;padding:1px 6px;border-radius:20px;letter-spacing:.03em;flex-shrink:0;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
+  .ti{background:var(--blue-l);color:var(--blue)}
+  .tf{background:var(--teal-l);color:var(--teal)}
+  .tv{background:var(--green-l);color:var(--green)}
+  .td{background:var(--amber-l);color:var(--amber)}
+  .tb{background:var(--purple-l);color:var(--purple)}
+  .tj{background:var(--red-l);color:var(--red)}
+  .te{background:var(--amber-l);color:var(--amber)}
+  .fd{font-size:8px;color:var(--muted);flex:1.1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ib{font-size:7.5px;padding:1px 5px;border-radius:20px;background:var(--teal-l);color:var(--teal);border:1px solid rgba(58,158,143,.3);flex-shrink:0;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
+
+  .er-sec{margin-top:24px;background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden;box-shadow:0 2px 8px rgba(60,50,30,.06)}
+  .er-hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--tag)}
+  .er-t{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase}
+  .er-s{font-size:9.5px;color:var(--muted);margin-top:2px}
+  .er-leg{display:flex;gap:12px;flex-wrap:wrap}
+  .er-li{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif}
+  .er-cv{padding:18px;overflow-x:auto;background:var(--bg)}
+
+  .rel-sec{margin-top:20px;background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:14px;box-shadow:0 2px 8px rgba(60,50,30,.05)}
+  .rel-sec h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+  .rg{display:flex;flex-wrap:wrap;gap:6px}
+  .ri{font-size:8.5px;color:var(--text2);background:var(--tag);border:1px solid var(--border);padding:3px 8px;border-radius:20px}
+  .ri .rf{color:var(--teal)}.ri .ra{color:var(--muted);margin:0 2px}.ri .rt{color:var(--amber)}.ri .rc{color:var(--purple);font-size:7.5px;margin-left:2px}
+
+  footer{margin-top:20px;font-size:9.5px;color:var(--muted);text-align:center;letter-spacing:.07em;border-top:1px solid var(--border);padding-top:13px;font-family:'Plus Jakarta Sans',sans-serif}
+  footer span{color:var(--blue);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>SUPPLY CHAIN <span>CHART DB</span></h1>
+    <div class="sub">DATABASE SCHEMA v2.0 — SUNTORY PEPSICO THAILAND · TRADING CHART ENGINE</div>
+    <div class="ohlc-hint">
+      <span class="ot oo">OPEN = begin stock</span><span class="ot oh">HIGH = peak demand</span>
+      <span class="ot ol">LOW = min inventory</span><span class="ot oc">CLOSE = end stock</span>
+    </div>
+    <div class="badges">
+      <span class="b b-blue">13 TABLES</span><span class="b b-amber">170+ FIELDS</span>
+      <span class="b b-green">5 NEW TABLES</span><span class="b b-teal">434 SKUs</span>
+      <span class="b b-purple">4 PLANTS · 14 LINES</span><span class="b b-red">RY / SR / SW / PW</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+    <span class="ver">v2.0 — SCHEMA UPDATE</span>
+    <div style="font-size:8.5px;color:var(--muted);text-align:right">02 Mar 2026 · Based on actual data</div>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:var(--amber)"></div>PK</div>
+  <div class="li"><div class="ld" style="background:var(--teal)"></div>FK</div>
+  <div class="li"><div class="ld" style="background:var(--green)"></div>Computed/IND</div>
+  <div class="li"><div class="ld" style="background:var(--blue)"></div>INT</div>
+  <div class="li"><div class="ld" style="background:var(--teal)"></div>FLOAT</div>
+  <div class="li"><div class="ld" style="background:var(--green)"></div>VARCHAR</div>
+  <div class="li"><div class="ld" style="background:var(--amber)"></div>DATE</div>
+  <div class="li"><div class="ld" style="background:var(--purple)"></div>BOOL/ENUM/JSON</div>
+  <div class="li"><div class="ls" style="background:var(--green-l);border:1px solid var(--green)"></div>New Table</div>
+  <div class="li"><div class="ls" style="background:var(--amber-l);border:1px solid var(--amber)"></div>Updated Table</div>
+  <div class="li"><div style="width:11px;height:7px;border-radius:2px;background:rgba(74,140,111,.08);border-left:2px solid var(--green)"></div>New Field</div>
+</div>
+
+<!-- ─── DIMENSIONS ─── -->
+<div class="sec">// DIMENSION TABLES — MASTER DATA</div>
+<div class="grid">
+
+  <!-- SKU_MASTER -->
+  <div class="card is-upd" style="animation-delay:.00s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(58,107,191,.1)">📦</div><div><div class="cn">SKU_MASTER<span class="ut">UPDATED</span></div><div class="cd">434 SKUs · 44 cols · Product_Information_Update</div></div></div><div class="ct">DIMENSION</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">sku_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">material_code</div><div class="ft tv">VARCHAR</div><div class="fd">SAP material (320023350…)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">description_eng</div><div class="ft tv">VARCHAR</div><div class="fd">English description</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">description_tha</div><div class="ft tv">VARCHAR</div><div class="fd">Thai description</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">brand</div><div class="ft tv">VARCHAR</div><div class="fd">PEPSI / 7UP / MIRINDA / BOSS…</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">pack_type</div><div class="ft te">ENUM</div><div class="fd">CAN / PET / BIB / CO2</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">flavor</div><div class="ft tv">VARCHAR</div><div class="fd">Flavor Level5</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">prod_hierarchy</div><div class="ft tv">VARCHAR</div><div class="fd">SAP prod hierarchy code</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">hier_l1 → hier_l7</div><div class="ft tv">VARCHAR</div><div class="fd">7-level SAP hierarchy codes</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">net_content_ml</div><div class="ft ti">INT</div><div class="fd">Net content ml</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">unit_per_case</div><div class="ft ti">INT</div><div class="fd">Units per case</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">case_dim_mm</div><div class="ft tv">VARCHAR</div><div class="fd">Case W×D×H mm</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">case_gross_wt_kg</div><div class="ft tf">FLOAT</div><div class="fd">Case gross weight kg</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">tray_type</div><div class="ft te">ENUM</div><div class="fd">TRAY/NON-TRAY/BOX/PAD</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">cases_per_pallet</div><div class="ft ti">INT</div><div class="fd">Total cases per pallet</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">pallet_height_m</div><div class="ft tf">FLOAT</div><div class="fd">Pallet height incl. pallet m</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">shelf_life_days</div><div class="ft ti">INT</div><div class="fd">Shelf life days</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">std_rc_8oz</div><div class="ft tf">FLOAT</div><div class="fd">8oz conversion factor</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">dual_plant_flag</div><div class="ft tb">BOOL</div><div class="fd">True if runs on 7101 & 7102</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">is_active</div><div class="ft tb">BOOL</div><div class="fd">Active flag</div></div>
+    </div>
+  </div>
+
+  <!-- LOCATION_MASTER -->
+  <div class="card" style="animation-delay:.04s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(58,158,143,.1)">🏭</div><div><div class="cn">LOCATION_MASTER</div><div class="cd">Warehouse / DC / store nodes</div></div></div><div class="ct">DIMENSION</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">location_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">location_code</div><div class="ft tv">VARCHAR</div><div class="fd">FG01 / RY / SR…</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">location_name</div><div class="ft tv">VARCHAR</div><div class="fd">Full name</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">location_type</div><div class="ft te">ENUM</div><div class="fd">WH / DC / STORE / PORT</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">region</div><div class="ft tv">VARCHAR</div><div class="fd">Geographic region</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">capacity_pallets</div><div class="ft ti">INT</div><div class="fd">Max pallet positions</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">capacity_cases</div><div class="ft ti">INT</div><div class="fd">Max cases capacity</div></div>
+    </div>
+  </div>
+
+  <!-- SUPPLY_PLANNING_MASTER -->
+  <div class="card is-upd" style="animation-delay:.08s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(176,125,46,.1)">🏗️</div><div><div class="cn">SUPPLY_PLANNING_MASTER<span class="ut">UPDATED</span></div><div class="cd">7101=Rayong · 7102=Saraburi · 7104=Siam Water · 7106=Prime Water</div></div></div><div class="ct">DIMENSION</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">plant_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">plant_code</div><div class="ft tv">VARCHAR</div><div class="fd">7101 / 7102 / 7104 / 7106</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">plant_name</div><div class="ft tv">VARCHAR</div><div class="fd">Rayong / Saraburi / Siam Water / Prime Water</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">plant_short</div><div class="ft tv">VARCHAR</div><div class="fd">RY / SR / SW / PW</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">plant_type</div><div class="ft te">ENUM</div><div class="fd">OWN / CO-PACK / COBO</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">location_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">total_lines</div><div class="ft ti">INT</div><div class="fd">RY=9 / SR=5 lines</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">std_lead_time_days</div><div class="ft ti">INT</div><div class="fd">Production lead time</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">is_active</div><div class="ft tb">BOOL</div><div class="fd">Active flag</div></div>
+    </div>
+  </div>
+
+  <!-- PRODUCTION_LINE (NEW) -->
+  <div class="card is-new" style="animation-delay:.12s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(74,140,111,.12)">⚙️</div><div><div class="cn">PRODUCTION_LINE<span class="nt">NEW</span></div><div class="cd">RY: Line1–9 (MS1) · SR: Line1–5 (SS1) · NE 86–95%</div></div></div><div class="ct">DIMENSION</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">line_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">line_code</div><div class="ft tv">VARCHAR</div><div class="fd">LINE2-1 / CO2FILL1…</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">line_name</div><div class="ft tv">VARCHAR</div><div class="fd">Line 1 / Line 2 / …</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">line_type</div><div class="ft te">ENUM</div><div class="fd">PET / CAN / BIB / CO2</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">line_series</div><div class="ft tv">VARCHAR</div><div class="fd">MS1 (RY) / SS1 (SR)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">bpm_capacity</div><div class="ft ti">INT</div><div class="fd">Bottles per min (500–800)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">ne_target_pct</div><div class="ft tf">FLOAT</div><div class="fd">Net efficiency target</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">sku_count</div><div class="ft ti">INT</div><div class="fd">No. SKUs on this line</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">moq_cases</div><div class="ft tf">FLOAT</div><div class="fd">Min order qty cases</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">is_active</div><div class="ft tb">BOOL</div><div class="fd">Active flag</div></div>
+    </div>
+  </div>
+
+  <!-- UNIT_CONVERSION (NEW) -->
+  <div class="card is-new" style="animation-delay:.16s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(74,140,111,.12)">🔢</div><div><div class="cn">UNIT_CONVERSION<span class="nt">NEW</span></div><div class="cd">RC / CV / SCV / 8oz factors · Parameter sheet 200 SKUs</div></div></div><div class="ct">DIMENSION</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">conv_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">material_code</div><div class="ft tv">VARCHAR</div><div class="fd">SAP code</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">transcode</div><div class="ft tv">VARCHAR</div><div class="fd">Planning transcode desc</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">pack_size_desc</div><div class="ft tv">VARCHAR</div><div class="fd">PET LN 250 P24…</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">content_ml</div><div class="ft tf">FLOAT</div><div class="fd">Content per bottle ml</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">bottles_per_case</div><div class="ft ti">INT</div><div class="fd">Bottles per case</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">cases_per_pallet</div><div class="ft ti">INT</div><div class="fd">Cases per pallet</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">factor_8oz</div><div class="ft tf">FLOAT</div><div class="fd">RC → 8oz factor (e.g. 1.0567)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">factor_rc_to_cv</div><div class="ft tf">FLOAT</div><div class="fd">RC → CV conversion</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">type_desc</div><div class="ft tv">VARCHAR</div><div class="fd">CSD PET / NCB PET…</div></div>
+    </div>
+  </div>
+
+</div><!-- end dim grid -->
+
+<!-- ─── FACT TABLES ─── -->
+<div class="sec">// FACT TABLES — TRANSACTIONAL & TIME-SERIES</div>
+<div class="grid">
+
+  <!-- INVENTORY_OHLC (CORE, updated) -->
+  <div class="card is-upd" style="animation-delay:.20s;border-color:var(--blue);border-width:2px">
+    <div class="ch" style="background:var(--blue-l)"><div class="chl"><div class="ico" style="background:var(--blue-s);border-color:var(--blue)">📊</div><div><div class="cn" style="color:var(--blue)">INVENTORY_OHLC<span class="ut">UPDATED</span></div><div class="cd">OHLC + 4 stock categories · core chart fact</div></div></div><div class="ct" style="color:var(--blue);background:white">★ CORE FACT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">ohlc_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">location_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER</div></div>
+      <div class="fr nf"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">period_date</div><div class="ft td">DATE</div><div class="fd">Snapshot date</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">period_type</div><div class="ft te">ENUM</div><div class="fd">DAY / WEEK / MONTH</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--blue)">O</div><div class="fn">stock_open</div><div class="ft tf">FLOAT</div><div class="fd">Opening stock (cases)</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--green)">H</div><div class="fn">stock_high</div><div class="ft tf">FLOAT</div><div class="fd">Peak stock in period</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--red)">L</div><div class="fn">stock_low</div><div class="ft tf">FLOAT</div><div class="fd">Min stock in period</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--amber)">C</div><div class="fn">stock_close</div><div class="ft tf">FLOAT</div><div class="fd">Closing stock (cases)</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">unrestricted_stock</div><div class="ft tf">FLOAT</div><div class="fd">Unrestricted (Inv-SCP)</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">quality_stock</div><div class="ft tf">FLOAT</div><div class="fd">Quality hold stock</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">block_stock</div><div class="ft tf">FLOAT</div><div class="fd">Blocked stock</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">in_transit_stock</div><div class="ft tf">FLOAT</div><div class="fd">Stock in transit</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">units_produced</div><div class="ft tf">FLOAT</div><div class="fd">Production inbound</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">units_consumed</div><div class="ft tf">FLOAT</div><div class="fd">Outbound / billing</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">stockout_flag</div><div class="ft tb">BOOL</div><div class="fd">Stockout occurred</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">unit_type</div><div class="ft te">ENUM</div><div class="fd">RC / CV / SCV / 8OZ</div></div>
+    </div>
+  </div>
+
+  <!-- DEMAND_SIGNAL (updated) -->
+  <div class="card is-upd" style="animation-delay:.24s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(124,95,191,.1)">📈</div><div><div class="cn">DEMAND_SIGNAL<span class="ut">UPDATED</span></div><div class="cd">5 streams: IBP / Pre-Fcst / Post-Fcst / Actual / Billing</div></div></div><div class="ct">FACT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">signal_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">location_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">period_date</div><div class="ft td">DATE</div><div class="fd">Date (day/week/month start)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">period_type</div><div class="ft te">ENUM</div><div class="fd">DAY / WEEK / MONTH</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">demand_type</div><div class="ft te">ENUM</div><div class="fd">IBP/PRE_FCST/POST_FCST/ACTUAL/BILLING</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">week_label</div><div class="ft tv">VARCHAR</div><div class="fd">w01 / w02…</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">volume_rc</div><div class="ft tf">FLOAT</div><div class="fd">Volume in RC (raw cases)</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">volume_8oz</div><div class="ft tf">FLOAT</div><div class="fd">Volume in 8oz RC</div></div>
+      <div class="fr nf"><div class="fk-col"></div><div class="fn">volume_cv</div><div class="ft tf">FLOAT</div><div class="fd">Volume in CV</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">forecast_upper</div><div class="ft tf">FLOAT</div><div class="fd">Upper confidence</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">forecast_lower</div><div class="ft tf">FLOAT</div><div class="fd">Lower confidence</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">forecast_model</div><div class="ft tv">VARCHAR</div><div class="fd">IBP / ARIMA / NAIVE</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">mape</div><div class="ft tf">FLOAT</div><div class="fd">Mean abs % error</div></div>
+    </div>
+  </div>
+
+  <!-- PRODUCTION_ORDER (NEW) -->
+  <div class="card is-new" style="animation-delay:.28s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(74,140,111,.12)">🔧</div><div><div class="cn">PRODUCTION_ORDER<span class="nt">NEW</span></div><div class="cd">SAP planned orders · Outputs_128 7101/7102 + MFBF historical</div></div></div><div class="ct">FACT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">prod_order_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">line_id</div><div class="ft ti">INT</div><div class="fd">→ PRODUCTION_LINE</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">destination_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER (FG01)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">planned_order_no</div><div class="ft tv">VARCHAR</div><div class="fd">SAP order no. (53112163…)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">posting_date</div><div class="ft td">DATE</div><div class="fd">Posting / execution date</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">production_version</div><div class="ft tv">VARCHAR</div><div class="fd">1000 / 2000 (SAP)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">shift</div><div class="ft ti">INT</div><div class="fd">Shift 1 / 2 / 3</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">planned_qty</div><div class="ft tf">FLOAT</div><div class="fd">Planned order qty</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">initial_qty</div><div class="ft tf">FLOAT</div><div class="fd">Initial order qty</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">gr_qty</div><div class="ft tf">FLOAT</div><div class="fd">Goods receipt (actual output)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">scv_qty</div><div class="ft tf">FLOAT</div><div class="fd">SCV quantity</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">uom</div><div class="ft tv">VARCHAR</div><div class="fd">EA / CV / SCV</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">batch_no</div><div class="ft tv">VARCHAR</div><div class="fd">Batch code (260201A0…)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">pallet_id</div><div class="ft tv">VARCHAR</div><div class="fd">Pallet ID (supplementary)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">mrp_controller</div><div class="ft tv">VARCHAR</div><div class="fd">Controller code (110/131…)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">order_status</div><div class="ft te">ENUM</div><div class="fd">PLAN / ACT / CONFIRMED</div></div>
+    </div>
+  </div>
+
+  <!-- ATP_STOCK (NEW) -->
+  <div class="card is-new" style="animation-delay:.32s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(74,140,111,.12)">🟢</div><div><div class="cn">ATP_STOCK<span class="nt">NEW</span></div><div class="cd">Available-to-promise · SO/DO committed · on-floor per plant</div></div></div><div class="ct">FACT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">atp_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">snapshot_date</div><div class="ft td">DATE</div><div class="fd">Snapshot date</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">unrestricted_stock</div><div class="ft tf">FLOAT</div><div class="fd">Unrestricted stock</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">so_committed</div><div class="ft tf">FLOAT</div><div class="fd">Sales order committed</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">do_committed</div><div class="ft tf">FLOAT</div><div class="fd">Delivery order committed</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">on_floor_total</div><div class="ft tf">FLOAT</div><div class="fd">Total on floor</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">total_atp</div><div class="ft tf">FLOAT</div><div class="fd">ATP = unrestricted − SO − DO</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">convert_to_pl</div><div class="ft tf">FLOAT</div><div class="fd">ATP in pallets</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">uom</div><div class="ft tv">VARCHAR</div><div class="fd">EA / CV / SCV</div></div>
+    </div>
+  </div>
+
+  <!-- WH_SPACE (NEW) -->
+  <div class="card is-new" style="animation-delay:.36s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(74,140,111,.12)">🏪</div><div><div class="cn">WH_SPACE<span class="nt">NEW</span></div><div class="cd">WH pallet utilization · weekly Begin/Prod/Demand/End</div></div></div><div class="ct">FACT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">wh_space_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">location_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">week_date</div><div class="ft td">DATE</div><div class="fd">Week start date</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">week_label</div><div class="ft tv">VARCHAR</div><div class="fd">w01 / w02…</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--blue)">O</div><div class="fn">begin_pallets</div><div class="ft tf">FLOAT</div><div class="fd">Beginning pallets (OPEN)</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--green)">H</div><div class="fn">production_in_pallets</div><div class="ft tf">FLOAT</div><div class="fd">Production inbound pallets</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--red)">L</div><div class="fn">demand_out_pallets</div><div class="ft tf">FLOAT</div><div class="fd">Demand outbound pallets</div></div>
+      <div class="fr"><div class="fk-col" style="color:var(--amber)">C</div><div class="fn">end_pallets</div><div class="ft tf">FLOAT</div><div class="fd">Ending pallets (CLOSE)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">capacity_pallets</div><div class="ft ti">INT</div><div class="fd">Max WH capacity pallets</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">utilization_pct</div><div class="ft tf">FLOAT</div><div class="fd">end / capacity</div></div>
+    </div>
+  </div>
+
+</div><!-- end fact grid -->
+
+<!-- ─── ANALYTICAL TABLES ─── -->
+<div class="sec">// ANALYTICAL TABLES — INDICATORS & EVENTS</div>
+<div class="grid">
+
+  <!-- SC_INDICATORS -->
+  <div class="card" style="animation-delay:.40s;border-color:var(--teal);border-width:2px">
+    <div class="ch" style="background:var(--teal-l)"><div class="chl"><div class="ico" style="background:rgba(58,158,143,.15);border-color:var(--teal)">🔬</div><div><div class="cn" style="color:var(--teal)">SC_INDICATORS</div><div class="cd">DOS · fill rate · line load · NE actual · risk score</div></div></div><div class="ct" style="color:var(--teal);background:white">★ INDICATOR</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">indicator_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">location_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">line_id</div><div class="ft ti">INT</div><div class="fd">→ PRODUCTION_LINE (nullable)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">period_date</div><div class="ft td">DATE</div><div class="fd">Indicator date</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">dos_7d <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">Days of supply 7d</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">dos_30d <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">Days of supply 30d</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">inv_ma_7d <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">7-day moving avg stock</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">fill_rate <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">% demand fulfilled (0–1)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">ne_actual_pct <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">Actual net efficiency %</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">line_load_pct <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">Line utilization %</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">demand_vs_supply <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">D/S ratio (gap signal)</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">risk_score <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">Stockout risk 0–100</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">reorder_signal <span class="ib">IND</span></div><div class="ft te">ENUM</div><div class="fd">BUY / HOLD / OVERSTOCK</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn ind">demand_momentum <span class="ib">IND</span></div><div class="ft tf">FLOAT</div><div class="fd">Demand accel (≈ RSI)</div></div>
+    </div>
+  </div>
+
+  <!-- ALERT_EVENTS -->
+  <div class="card" style="animation-delay:.44s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(217,95,82,.1)">🚨</div><div><div class="cn">ALERT_EVENTS</div><div class="cd">Triggered alerts &amp; chart annotations</div></div></div><div class="ct">EVENT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">alert_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">sku_id</div><div class="ft ti">INT</div><div class="fd">→ SKU_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">location_id</div><div class="ft ti">INT</div><div class="fd">→ LOCATION_MASTER</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">alert_date</div><div class="ft td">TIMESTAMP</div><div class="fd">When alert fired</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">alert_type</div><div class="ft te">ENUM</div><div class="fd">STOCKOUT/OVERSTOCK/LINE_DOWN/DS_GAP</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">severity</div><div class="ft te">ENUM</div><div class="fd">LOW / MED / HIGH / CRIT</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">message</div><div class="ft tv">TEXT</div><div class="fd">Human-readable description</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">is_resolved</div><div class="ft tb">BOOL</div><div class="fd">Resolution flag</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">meta</div><div class="ft tj">JSON</div><div class="fd">Extra context payload</div></div>
+    </div>
+  </div>
+
+  <!-- LINE_LOAD_PLAN (NEW) -->
+  <div class="card is-new" style="animation-delay:.48s">
+    <div class="ch"><div class="chl"><div class="ico" style="background:rgba(74,140,111,.12)">📋</div><div><div class="cn">LINE_LOAD_PLAN<span class="nt">NEW</span></div><div class="cd">Daily line load · RY Line Load / SR Line Load sheets · ACT vs PLAN</div></div></div><div class="ct">FACT</div></div>
+    <div class="fl">
+      <div class="fr"><div class="fk-col">PK</div><div class="fn pk">load_id</div><div class="ft ti">INT</div><div class="fd">Surrogate key</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">line_id</div><div class="ft ti">INT</div><div class="fd">→ PRODUCTION_LINE</div></div>
+      <div class="fr"><div class="fk-col">FK</div><div class="fn fk">plant_id</div><div class="ft ti">INT</div><div class="fd">→ SUPPLY_PLANNING_MASTER</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">plan_date</div><div class="ft td">DATE</div><div class="fd">Plan date</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">week_label</div><div class="ft tv">VARCHAR</div><div class="fd">w01…w52</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">day_label</div><div class="ft tv">VARCHAR</div><div class="fd">01W01 / 02W01…</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">record_type</div><div class="ft te">ENUM</div><div class="fd">ACT / PLAN</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">volume_load_rc</div><div class="ft tf">FLOAT</div><div class="fd">Volume load in RC</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">efficiency_pct</div><div class="ft tf">FLOAT</div><div class="fd">Actual line efficiency</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">working_hours</div><div class="ft tf">FLOAT</div><div class="fd">Scheduled working hours</div></div>
+      <div class="fr"><div class="fk-col"></div><div class="fn">load_pct</div><div class="ft tf">FLOAT</div><div class="fd">Load utilization %</div></div>
+    </div>
+  </div>
+
+</div><!-- end analytical grid -->
+
+<!-- ─── ER DIAGRAM ─── -->
+<div class="er-sec">
+  <div class="er-hd">
+    <div><div class="er-t">// ENTITY RELATIONSHIP DIAGRAM</div><div class="er-s">Crow's foot notation · hover to highlight · v2.0 · 13 tables · 24 relationships</div></div>
+    <div class="er-leg">
+      <div class="er-li"><svg width="28" height="11"><line x1="0" y1="5.5" x2="28" y2="5.5" stroke="#3a6bbf" stroke-width="1.5"/><line x1="22" y1="1.5" x2="28" y2="5.5" stroke="#3a6bbf" stroke-width="1.5"/><line x1="22" y1="9.5" x2="28" y2="5.5" stroke="#3a6bbf" stroke-width="1.5"/></svg>Many</div>
+      <div class="er-li"><svg width="28" height="11"><line x1="0" y1="5.5" x2="28" y2="5.5" stroke="#3a6bbf" stroke-width="1.5"/><line x1="24" y1="1.5" x2="24" y2="9.5" stroke="#3a6bbf" stroke-width="1.5"/><line x1="20" y1="1.5" x2="20" y2="9.5" stroke="#3a6bbf" stroke-width="1.5"/></svg>One</div>
+      <div class="er-li"><span style="color:#b07d2e;font-weight:700">PK</span> Primary</div>
+      <div class="er-li"><span style="color:#3a9e8f;font-weight:700">FK</span> Foreign</div>
+      <div class="er-li"><div style="width:9px;height:9px;border-radius:2px;background:#d8ede4;border:1px solid #4a8c6f"></div>New</div>
+      <div class="er-li"><div style="width:9px;height:9px;border-radius:2px;background:#f5e9d0;border:1px solid #b07d2e"></div>Updated</div>
+    </div>
+  </div>
+  <div class="er-cv">
+    <svg id="erSvg" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1150 820" style="display:block"></svg>
+  </div>
+</div>
+
+<!-- Relationship reference -->
+<div class="rel-sec">
+  <h3>// RELATIONSHIP REFERENCE — 24 RELATIONSHIPS</h3>
+  <div class="rg">
+    <div class="ri"><span class="rf">SKU_MASTER</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">SUPPLY_PLANNING_MASTER</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">PRODUCTION_LINE</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">UNIT_CONVERSION</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">INVENTORY_OHLC</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">INVENTORY_OHLC</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">INVENTORY_OHLC</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">DEMAND_SIGNAL</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">DEMAND_SIGNAL</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">PRODUCTION_ORDER</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">PRODUCTION_ORDER</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">PRODUCTION_ORDER</span><span class="ra">→</span><span class="rt">PRODUCTION_LINE</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">PRODUCTION_ORDER</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">ATP_STOCK</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">ATP_STOCK</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">WH_SPACE</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">LINE_LOAD_PLAN</span><span class="ra">→</span><span class="rt">PRODUCTION_LINE</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">LINE_LOAD_PLAN</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">SC_INDICATORS</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">SC_INDICATORS</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">SC_INDICATORS</span><span class="ra">→</span><span class="rt">PRODUCTION_LINE</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">ALERT_EVENTS</span><span class="ra">→</span><span class="rt">SKU_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">ALERT_EVENTS</span><span class="ra">→</span><span class="rt">LOCATION_MASTER</span><span class="rc">N:1</span></div>
+    <div class="ri"><span class="rf">ALERT_EVENTS</span><span class="ra">→</span><span class="rt">SUPPLY_PLANNING_MASTER</span><span class="rc">N:1</span></div>
+  </div>
+</div>
+
+<footer>SUPPLY CHAIN CHART DB — <span>v2.0</span> &nbsp;|&nbsp; <span>13 TABLES · 170+ FIELDS · 24 RELATIONSHIPS</span> &nbsp;|&nbsp; 5 NEW + 3 UPDATED &nbsp;|&nbsp; SUNTORY PEPSICO THAILAND · 02 MAR 2026</footer>
+
+</div><!-- wrap -->
+
+<script>
+(function(){
+const entities=[
+  {id:'SKU_MASTER',          label:'SKU_MASTER',         emoji:'📦',type:'DIMENSION',color:'#3a6bbf',bg:'#d6e2f5',isNew:false,isUpd:true,
+   fields:[{n:'sku_id',k:'PK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'material_code',k:'',t:'VARCHAR'},{n:'brand',k:'',t:'VARCHAR'},{n:'pack_type',k:'',t:'ENUM'},{n:'hier_l1~l7',k:'',t:'VARCHAR'},{n:'std_rc_8oz',k:'',t:'FLOAT'},{n:'dual_plant_flag',k:'',t:'BOOL'},{n:'is_active',k:'',t:'BOOL'}]},
+  {id:'LOCATION_MASTER',     label:'LOCATION_MASTER',    emoji:'🏭',type:'DIMENSION',color:'#3a9e8f',bg:'#d3eeea',isNew:false,isUpd:false,
+   fields:[{n:'location_id',k:'PK',t:'INT'},{n:'location_code',k:'',t:'VARCHAR'},{n:'location_type',k:'',t:'ENUM'},{n:'plant_id',k:'FK',t:'INT'},{n:'capacity_pallets',k:'',t:'INT'},{n:'region',k:'',t:'VARCHAR'}]},
+  {id:'SUPPLY_PLANNING_MASTER',label:'SUPPLY_PLAN_M',   emoji:'🏗️',type:'DIMENSION',color:'#b07d2e',bg:'#f5e9d0',isNew:false,isUpd:true,
+   fields:[{n:'plant_id',k:'PK',t:'INT'},{n:'plant_code',k:'',t:'VARCHAR'},{n:'plant_name',k:'',t:'VARCHAR'},{n:'plant_short',k:'',t:'VARCHAR'},{n:'plant_type',k:'',t:'ENUM'},{n:'location_id',k:'FK',t:'INT'},{n:'total_lines',k:'',t:'INT'},{n:'is_active',k:'',t:'BOOL'}]},
+  {id:'PRODUCTION_LINE',     label:'PRODUCTION_LINE',    emoji:'⚙️',type:'DIMENSION',color:'#4a8c6f',bg:'#d8ede4',isNew:true,isUpd:false,
+   fields:[{n:'line_id',k:'PK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'line_code',k:'',t:'VARCHAR'},{n:'line_type',k:'',t:'ENUM'},{n:'bpm_capacity',k:'',t:'INT'},{n:'ne_target_pct',k:'',t:'FLOAT'},{n:'moq_cases',k:'',t:'FLOAT'}]},
+  {id:'UNIT_CONVERSION',     label:'UNIT_CONVERSION',    emoji:'🔢',type:'DIMENSION',color:'#4a8c6f',bg:'#d8ede4',isNew:true,isUpd:false,
+   fields:[{n:'conv_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'material_code',k:'',t:'VARCHAR'},{n:'factor_8oz',k:'',t:'FLOAT'},{n:'bottles_per_case',k:'',t:'INT'},{n:'cases_per_pallet',k:'',t:'INT'},{n:'type_desc',k:'',t:'VARCHAR'}]},
+  {id:'INVENTORY_OHLC',      label:'INVENTORY_OHLC',     emoji:'📊',type:'CORE FACT',color:'#3a6bbf',bg:'#d6e2f5',highlight:true,isNew:false,isUpd:true,
+   fields:[{n:'ohlc_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'location_id',k:'FK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'period_date',k:'',t:'DATE'},{n:'stock_open',k:'O',t:'FLOAT'},{n:'stock_high',k:'H',t:'FLOAT'},{n:'stock_low',k:'L',t:'FLOAT'},{n:'stock_close',k:'C',t:'FLOAT'},{n:'unrestricted_stock',k:'',t:'FLOAT'},{n:'in_transit_stock',k:'',t:'FLOAT'},{n:'unit_type',k:'',t:'ENUM'}]},
+  {id:'DEMAND_SIGNAL',       label:'DEMAND_SIGNAL',      emoji:'📈',type:'FACT',     color:'#7c5fbf',bg:'#e8e2f5',isNew:false,isUpd:true,
+   fields:[{n:'signal_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'location_id',k:'FK',t:'INT'},{n:'period_date',k:'',t:'DATE'},{n:'demand_type',k:'',t:'ENUM'},{n:'volume_rc',k:'',t:'FLOAT'},{n:'volume_8oz',k:'',t:'FLOAT'},{n:'mape',k:'',t:'FLOAT'}]},
+  {id:'PRODUCTION_ORDER',    label:'PRODUCTION_ORDER',   emoji:'🔧',type:'FACT',     color:'#4a8c6f',bg:'#d8ede4',isNew:true,isUpd:false,
+   fields:[{n:'prod_order_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'line_id',k:'FK',t:'INT'},{n:'destination_id',k:'FK',t:'INT'},{n:'posting_date',k:'',t:'DATE'},{n:'planned_qty',k:'',t:'FLOAT'},{n:'gr_qty',k:'',t:'FLOAT'},{n:'order_status',k:'',t:'ENUM'}]},
+  {id:'ATP_STOCK',           label:'ATP_STOCK',          emoji:'🟢',type:'FACT',     color:'#4a8c6f',bg:'#d8ede4',isNew:true,isUpd:false,
+   fields:[{n:'atp_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'snapshot_date',k:'',t:'DATE'},{n:'unrestricted_stock',k:'',t:'FLOAT'},{n:'so_committed',k:'',t:'FLOAT'},{n:'do_committed',k:'',t:'FLOAT'},{n:'total_atp',k:'',t:'FLOAT'}]},
+  {id:'WH_SPACE',            label:'WH_SPACE',           emoji:'🏪',type:'FACT',     color:'#4a8c6f',bg:'#d8ede4',isNew:true,isUpd:false,
+   fields:[{n:'wh_space_id',k:'PK',t:'INT'},{n:'location_id',k:'FK',t:'INT'},{n:'week_date',k:'',t:'DATE'},{n:'begin_pallets',k:'O',t:'FLOAT'},{n:'production_in',k:'H',t:'FLOAT'},{n:'demand_out',k:'L',t:'FLOAT'},{n:'end_pallets',k:'C',t:'FLOAT'},{n:'utilization_pct',k:'',t:'FLOAT'}]},
+  {id:'SC_INDICATORS',       label:'SC_INDICATORS',      emoji:'🔬',type:'INDICATOR',color:'#3a9e8f',bg:'#d3eeea',highlight:true,isNew:false,isUpd:false,
+   fields:[{n:'indicator_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'location_id',k:'FK',t:'INT'},{n:'line_id',k:'FK',t:'INT'},{n:'dos_7d',k:'IND',t:'FLOAT'},{n:'fill_rate',k:'IND',t:'FLOAT'},{n:'ne_actual_pct',k:'IND',t:'FLOAT'},{n:'demand_vs_supply',k:'IND',t:'FLOAT'},{n:'risk_score',k:'IND',t:'FLOAT'},{n:'reorder_signal',k:'IND',t:'ENUM'}]},
+  {id:'ALERT_EVENTS',        label:'ALERT_EVENTS',       emoji:'🚨',type:'EVENT',    color:'#d95f52',bg:'#fae0dc',isNew:false,isUpd:false,
+   fields:[{n:'alert_id',k:'PK',t:'INT'},{n:'sku_id',k:'FK',t:'INT'},{n:'location_id',k:'FK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'alert_type',k:'',t:'ENUM'},{n:'severity',k:'',t:'ENUM'},{n:'is_resolved',k:'',t:'BOOL'}]},
+  {id:'LINE_LOAD_PLAN',      label:'LINE_LOAD_PLAN',     emoji:'📋',type:'FACT',     color:'#4a8c6f',bg:'#d8ede4',isNew:true,isUpd:false,
+   fields:[{n:'load_id',k:'PK',t:'INT'},{n:'line_id',k:'FK',t:'INT'},{n:'plant_id',k:'FK',t:'INT'},{n:'plan_date',k:'',t:'DATE'},{n:'record_type',k:'',t:'ENUM'},{n:'volume_load_rc',k:'',t:'FLOAT'},{n:'efficiency_pct',k:'',t:'FLOAT'},{n:'load_pct',k:'',t:'FLOAT'}]},
+];
+
+const rels=[
+  {from:'SKU_MASTER',from_f:'plant_id',         to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+  {from:'SUPPLY_PLANNING_MASTER',from_f:'location_id',to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'PRODUCTION_LINE',from_f:'plant_id',    to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+  {from:'UNIT_CONVERSION',from_f:'sku_id',      to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'INVENTORY_OHLC',from_f:'sku_id',       to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'INVENTORY_OHLC',from_f:'location_id',  to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'INVENTORY_OHLC',from_f:'plant_id',     to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+  {from:'DEMAND_SIGNAL',from_f:'sku_id',        to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'DEMAND_SIGNAL',from_f:'location_id',   to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'PRODUCTION_ORDER',from_f:'sku_id',     to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'PRODUCTION_ORDER',from_f:'plant_id',   to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+  {from:'PRODUCTION_ORDER',from_f:'line_id',    to:'PRODUCTION_LINE',to_f:'line_id'},
+  {from:'PRODUCTION_ORDER',from_f:'destination_id',to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'ATP_STOCK',from_f:'sku_id',            to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'ATP_STOCK',from_f:'plant_id',          to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+  {from:'WH_SPACE',from_f:'location_id',        to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'LINE_LOAD_PLAN',from_f:'line_id',      to:'PRODUCTION_LINE',to_f:'line_id'},
+  {from:'LINE_LOAD_PLAN',from_f:'plant_id',     to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+  {from:'SC_INDICATORS',from_f:'sku_id',        to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'SC_INDICATORS',from_f:'location_id',   to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'SC_INDICATORS',from_f:'line_id',       to:'PRODUCTION_LINE',to_f:'line_id'},
+  {from:'ALERT_EVENTS',from_f:'sku_id',         to:'SKU_MASTER',to_f:'sku_id'},
+  {from:'ALERT_EVENTS',from_f:'location_id',    to:'LOCATION_MASTER',to_f:'location_id'},
+  {from:'ALERT_EVENTS',from_f:'plant_id',       to:'SUPPLY_PLANNING_MASTER',to_f:'plant_id'},
+];
+
+// Layout — 3 column + overflow right
+// Col A x=15, Col B x=220, Col C x=440, Col D x=680, Col E x=910
+// Row 0 y=15:  SPM  SKU  LOC
+// Row 1 y=15:  PROD_LINE  (gap)  UNIT_CONV (right)
+// Row 2 y=270: PROD_ORDER  INV_OHLC  DEMAND  ATP
+// Row 3 y=270: LINE_LOAD   (gap)     WH_SPACE
+// Row 4 y=560: SC_IND  ALERT  (gap)
+
+const W=180,FH=20,HH=48;
+const eH=e=>HH+e.fields.length*FH;
+const pos={
+  'SUPPLY_PLANNING_MASTER':{x:15,  y:15 },
+  'SKU_MASTER':            {x:220, y:15 },
+  'LOCATION_MASTER':       {x:440, y:15 },
+  'PRODUCTION_LINE':       {x:15,  y:240},
+  'UNIT_CONVERSION':       {x:660, y:15 },
+  'INVENTORY_OHLC':        {x:220, y:255},
+  'DEMAND_SIGNAL':         {x:440, y:255},
+  'PRODUCTION_ORDER':      {x:15,  y:460},
+  'ATP_STOCK':             {x:660, y:255},
+  'WH_SPACE':              {x:880, y:255},
+  'LINE_LOAD_PLAN':        {x:220, y:490},
+  'SC_INDICATORS':         {x:440, y:530},
+  'ALERT_EVENTS':          {x:880, y:530},
+};
+
+const svg=document.getElementById('erSvg');
+svg.setAttribute('viewBox','0 0 1090 780');
+const ns='http://www.w3.org/2000/svg';
+const mk=(tag,attrs,txt)=>{const e=document.createElementNS(ns,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(txt!==undefined)e.textContent=txt;return e;};
+
+const defs=mk('defs',{});
+const flt=mk('filter',{id:'sh',x:'-10%',y:'-10%',width:'130%',height:'140%'});
+flt.appendChild(mk('feDropShadow',{dx:'0',dy:'2',stdDeviation:'3','flood-color':'rgba(60,50,30,.1)'}));
+defs.appendChild(flt);
+
+const clrs={blue:'#3a6bbf',teal:'#3a9e8f',amber:'#b07d2e',purple:'#7c5fbf',red:'#d95f52',green:'#4a8c6f'};
+function mkM(id,c){const m=mk('marker',{id,markerWidth:'18',markerHeight:'14',refX:'4',refY:'7',orient:'auto-start-reverse'});m.appendChild(mk('line',{x1:'4',y1:'2',x2:'10',y2:'7',stroke:c,'stroke-width':'1.5','stroke-linecap':'round'}));m.appendChild(mk('line',{x1:'4',y1:'12',x2:'10',y2:'7',stroke:c,'stroke-width':'1.5','stroke-linecap':'round'}));m.appendChild(mk('line',{x1:'4',y1:'2',x2:'4',y2:'12',stroke:c,'stroke-width':'1.5','stroke-linecap':'round'}));return m;}
+function mkO(id,c){const m=mk('marker',{id,markerWidth:'12',markerHeight:'14',refX:'10',refY:'7',orient:'auto'});m.appendChild(mk('line',{x1:'6',y1:'2',x2:'6',y2:'12',stroke:c,'stroke-width':'1.5','stroke-linecap':'round'}));m.appendChild(mk('line',{x1:'10',y1:'2',x2:'10',y2:'12',stroke:c,'stroke-width':'1.5','stroke-linecap':'round'}));return m;}
+Object.entries(clrs).forEach(([n,h])=>{defs.appendChild(mkM(`mm-${n}`,h));defs.appendChild(mkO(`mo-${n}`,h));});
+svg.appendChild(defs);
+
+function eColor(id){return entities.find(e=>e.id===id)?.color||'#3a6bbf';}
+function cName(h){return Object.entries(clrs).find(([,v])=>v===h)?.[0]||'blue';}
+function fY(eid,fn){const e=entities.find(x=>x.id===eid);const p=pos[eid];const i=e.fields.findIndex(f=>f.n===fn);return p.y+HH+(i<0?0:i)*FH+FH/2;}
+function sides(a,b){const ap=pos[a],bp=pos[b];const ax=ap.x+W/2,bx=bp.x+W/2;if(ax<bx-15)return['right','left'];if(ax>bx+15)return['left','right'];return ap.y<bp.y?['right','left']:['left','right'];}
+function curve(fx,fy,tx,ty,fs,ts,i){
+  const adx=Math.abs(tx-fx),ady=Math.abs(ty-fy);
+  const hT=Math.max(50,adx*.44+ady*.07);
+  const vD=(i%5-2)*8;
+  let cx1,cy1,cx2,cy2;
+  if(fs==='right'&&ts==='left'){cx1=fx+hT;cy1=fy+vD*.3;cx2=tx-hT;cy2=ty+vD*.3;}
+  else if(fs==='left'&&ts==='right'){cx1=fx-hT;cy1=fy+vD*.3;cx2=tx+hT;cy2=ty+vD*.3;}
+  else if(fs==='right'&&ts==='right'){const lx=Math.max(fx,tx)+52+Math.abs(vD);cx1=lx;cy1=fy;cx2=lx;cy2=ty;}
+  else if(fs==='left'&&ts==='left'){const lx=Math.min(fx,tx)-52-Math.abs(vD);cx1=lx;cy1=fy;cx2=lx;cy2=ty;}
+  else{const dy=ty-fy;cx1=fx+(fs==='right'?hT:-hT);cy1=fy+dy*.3;cx2=tx+(ts==='left'?-hT:hT);cy2=ty-dy*.3;}
+  return `M ${fx} ${fy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+}
+
+const rlyr=mk('g',{id:'rl'});
+rels.forEach((r,i)=>{
+  if(!pos[r.from]||!pos[r.to])return;
+  const[fs,ts]=sides(r.from,r.to);
+  const fx=fs==='right'?pos[r.from].x+W:pos[r.from].x;
+  const fy2=fY(r.from,r.from_f);
+  const tx2=ts==='left'?pos[r.to].x:pos[r.to].x+W;
+  const ty2=fY(r.to,r.to_f);
+  const hex=eColor(r.from);const cn=cName(hex);
+  rlyr.appendChild(mk('path',{d:curve(fx,fy2,tx2,ty2,fs,ts,i),stroke:hex,'stroke-width':'1.5',fill:'none',opacity:'.42','stroke-linecap':'round','marker-start':`url(#mm-${cn})`,'marker-end':`url(#mo-${cn})`,class:`rp rf-${r.from} rt-${r.to}`}));
+});
+svg.appendChild(rlyr);
+
+const tcol={INT:{bg:'#d6e2f5',fg:'#3a6bbf'},FLOAT:{bg:'#d3eeea',fg:'#3a9e8f'},VARCHAR:{bg:'#d8ede4',fg:'#4a8c6f'},DATE:{bg:'#f5e9d0',fg:'#b07d2e'},BOOL:{bg:'#e8e2f5',fg:'#7c5fbf'},ENUM:{bg:'#f5e9d0',fg:'#b07d2e'},JSON:{bg:'#fae0dc',fg:'#d95f52'},TIMESTAMP:{bg:'#f5e9d0',fg:'#b07d2e'},TEXT:{bg:'#d8ede4',fg:'#4a8c6f'}};
+
+const elyr=mk('g',{id:'el'});
+entities.forEach(ent=>{
+  const p=pos[ent.id];if(!p)return;
+  const h=eH(ent);
+  const g=mk('g',{class:'ee','data-id':ent.id,style:'cursor:pointer',transform:`translate(${p.x},${p.y})`});
+  const bc=ent.isNew?'#4a8c6f':ent.isUpd?'#b07d2e':(ent.highlight?ent.color:'#ddd8d0');
+  const bw=ent.isNew||ent.isUpd||ent.highlight?'2':'1';
+  g.appendChild(mk('rect',{x:0,y:0,width:W,height:h,rx:8,ry:8,fill:'white',stroke:bc,'stroke-width':bw,filter:'url(#sh)'}));
+  g.appendChild(mk('rect',{x:0,y:0,width:W,height:HH,rx:8,ry:8,fill:ent.bg}));
+  g.appendChild(mk('rect',{x:0,y:HH-7,width:W,height:7,fill:ent.bg}));
+  g.appendChild(mk('rect',{x:0,y:0,width:4,height:h,fill:ent.color,opacity:'.6'}));
+  g.appendChild(mk('rect',{x:0,y:0,width:4,height:HH,fill:ent.color}));
+  g.appendChild(mk('text',{x:12,y:18,'font-family':'Plus Jakarta Sans,sans-serif','font-weight':'700','font-size':'9.5',fill:ent.color},ent.emoji+' '+ent.label));
+  if(ent.isNew){const bw2=22;g.appendChild(mk('rect',{x:W-bw2-5,y:6,width:bw2,height:11,rx:5,fill:'#4a8c6f',opacity:'.15'}));g.appendChild(mk('text',{x:W-bw2/2-5,y:14,'font-family':'Plus Jakarta Sans,sans-serif','font-weight':'700','font-size':'7',fill:'#4a8c6f','text-anchor':'middle'},'NEW'));}
+  const bdw=ent.type.length*5+7;const bdx=W-bdw-8;
+  g.appendChild(mk('rect',{x:bdx,y:30,width:bdw,height:12,rx:5,fill:ent.color,opacity:'.12'}));
+  g.appendChild(mk('text',{x:bdx+bdw/2,y:39,'font-family':'Plus Jakarta Sans,sans-serif','font-weight':'700','font-size':'7',fill:ent.color,'text-anchor':'middle'},ent.type));
+  ent.fields.forEach((f,i)=>{
+    const fy3=HH+i*FH;
+    if(i<ent.fields.length-1)g.appendChild(mk('line',{x1:4,y1:fy3+FH,x2:W,y2:fy3+FH,stroke:'#ebe7e0','stroke-width':'.5'}));
+    if(f.k){let kc='#9e9a90';if(f.k==='PK')kc='#b07d2e';else if(f.k==='FK')kc='#3a9e8f';else if(f.k==='IND')kc='#3a9e8f';else if(f.k==='O')kc='#3a6bbf';else if(f.k==='C')kc='#b07d2e';else if(f.k==='H')kc='#4a8c6f';else if(f.k==='L')kc='#d95f52';g.appendChild(mk('text',{x:10,y:fy3+13,'font-family':'Plus Jakarta Sans,sans-serif','font-size':'7','font-weight':'700',fill:kc},f.k));}
+    let nc='#5c584f';if(f.k==='PK')nc='#b07d2e';else if(f.k==='FK')nc='#3a9e8f';else if(f.k==='IND')nc='#3a9e8f';
+    g.appendChild(mk('text',{x:27,y:fy3+13,'font-family':'DM Mono,monospace','font-size':'8.5',fill:nc},f.n));
+    const tc2=tcol[f.t]||{bg:'#ede9e2',fg:'#9e9a90'};const tw=f.t.length*5+7;
+    g.appendChild(mk('rect',{x:W-tw-6,y:fy3+4,width:tw,height:11,rx:5,fill:tc2.bg}));
+    g.appendChild(mk('text',{x:W-tw/2-6,y:fy3+12,'font-family':'Plus Jakarta Sans,sans-serif','font-size':'7','font-weight':'700',fill:tc2.fg,'text-anchor':'middle'},f.t));
+  });
+  elyr.appendChild(g);
+});
+svg.appendChild(elyr);
+
+const allE=svg.querySelectorAll('.ee'),allP=svg.querySelectorAll('.rp');
+allE.forEach(g=>{
+  g.addEventListener('mouseenter',()=>{
+    const id=g.getAttribute('data-id');
+    allP.forEach(p=>{const a=p.classList.contains(`rf-${id}`)||p.classList.contains(`rt-${id}`);p.setAttribute('opacity',a?'1':'.05');p.setAttribute('stroke-width',a?'2.5':'1.5');});
+    allE.forEach(eg=>{const eid=eg.getAttribute('data-id');const c=rels.some(r=>(r.from===id&&r.to===eid)||(r.to===id&&r.from===eid));eg.style.opacity=(eid===id||c)?'1':'.22';});
+  });
+  g.addEventListener('mouseleave',()=>{
+    allP.forEach(p=>{p.setAttribute('opacity','.42');p.setAttribute('stroke-width','1.5');});
+    allE.forEach(eg=>{eg.style.opacity='1';});
+  });
+});
+})();
+</script>
+</body>
+</html>
