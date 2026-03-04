@@ -1,7 +1,0 @@
-location_id,location_code,location_name,location_type,plant_id,region,capacity_pallets,capacity_cases
-1,FG01,Rayong FG Warehouse,WH,1.0,East,8000,960000
-2,FG02,Saraburi FG Warehouse,WH,2.0,Central,5000,600000
-3,SW01,Siam Water Warehouse,WH,3.0,Central,2000,240000
-4,PW01,Prime Water Warehouse,WH,4.0,East,2000,240000
-5,DC01,Bangkok Central DC,DC,,Central,15000,1800000
-6,DC02,Northern DC,DC,,North,5000,600000

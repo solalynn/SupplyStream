@@ -1,5 +1,0 @@
-plant_id,plant_code,plant_name,plant_short,plant_type,location_id,total_lines,std_lead_time_days,is_active
-1,7101,Rayong,RY,OWN,1,9,2,1
-2,7102,Saraburi,SR,OWN,2,5,2,1
-3,7104,Siam Water,SW,CO-PACK,3,0,5,1
-4,7106,Prime Water,PW,CO-PACK,4,0,5,1
